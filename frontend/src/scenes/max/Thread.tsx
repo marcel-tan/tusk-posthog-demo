@@ -766,6 +766,7 @@ export function MultiVisualizationAnswer({ message, className }: MultiVisualizat
         })
     }
 
+    // TODO: wtf?
     if (visualizations.length === 0) {
         return <div>No visualizations available</div>
     }
