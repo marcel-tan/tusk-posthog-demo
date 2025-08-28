@@ -90,11 +90,6 @@ class HogQLGeneratorMixin(AssistantContextMixin):
         try:
             # First pass to fix the query syntax
             normalized_query = print_ast_max_hogql(parse_select(query, placeholders={}), context=hogql_context)
-            # parsed_query = parse_select(normalized_query, placeholders={})
-
-            # # Validate that the query is valid
-            # final = print_ast_max_hogql(parsed_query, context=hogql_context)
-            # # Return the normalized query
 
             return normalized_query
         except (ExposedHogQLError, HogQLNotImplementedError, ResolutionError) as err:
