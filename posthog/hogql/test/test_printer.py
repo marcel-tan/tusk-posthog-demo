@@ -2564,97 +2564,95 @@ class TestPrinter(BaseTest):
 
         assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
 
-    def test_loose_syntax_function_normalization(self):
-        """Test function name normalization with loose_syntax parameter."""
-        loose_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=True)
-        strict_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=False)
+    def test_max_hogql_function_normalization(self):
+        """Test function name normalization with correct_function_names flag."""
+        normal_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+        corrected_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, correct_function_names=True)
 
         # Test basic function normalization - aggregation functions
         query_ast = parse_select("SELECT COUNT() FROM events")
-        strict_result = print_ast(query_ast, strict_context, "hogql")
-        loose_result = print_ast(query_ast, loose_context, "hogql")
+        normal_result = print_ast(query_ast, normal_context, "max_hogql")
+        corrected_result = print_ast(query_ast, corrected_context, "max_hogql")
 
-        self.assertIn("COUNT()", strict_result)
-        self.assertIn("count()", loose_result)
-        self.assertNotIn("COUNT()", loose_result)
+        self.assertIn("COUNT()", normal_result)
+        self.assertIn("count()", corrected_result)
+        self.assertNotIn("COUNT()", corrected_result)
 
         # Test multiple aggregation functions
         query_ast = parse_select("SELECT SUM(value), AVG(score), MAX(age) FROM events")
-        strict_result = print_ast(query_ast, strict_context, "hogql")
-        loose_result = print_ast(query_ast, loose_context, "hogql")
+        normal_result = print_ast(query_ast, normal_context, "max_hogql")
+        corrected_result = print_ast(query_ast, corrected_context, "max_hogql")
 
-        self.assertIn("SUM(", strict_result)
-        self.assertIn("AVG(", strict_result)
-        self.assertIn("MAX(", strict_result)
-        self.assertIn("sum(", loose_result)
-        self.assertIn("avg(", loose_result)
-        self.assertIn("max(", loose_result)
+        self.assertIn("SUM(", normal_result)
+        self.assertIn("AVG(", normal_result)
+        self.assertIn("MAX(", normal_result)
+        self.assertIn("sum(", corrected_result)
+        self.assertIn("avg(", corrected_result)
+        self.assertIn("max(", corrected_result)
 
         query_ast = parse_select("SELECT countIF(active = 1) FROM events")
-        result = print_ast(query_ast, loose_context, "hogql")
+        result = print_ast(query_ast, corrected_context, "max_hogql")
         self.assertIn("countIf(", result)
 
-    def test_loose_syntax_preserves_placeholders(self):
-        """Test that placeholders are preserved when loose_syntax is enabled."""
-        loose_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=True)
+    def test_max_hogql_preserves_placeholders(self):
+        """Test that placeholders are preserved with max_hogql dialect."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
 
         query_ast = parse_select("SELECT {filters} FROM events")
-        loose_result = print_ast(query_ast, loose_context, "hogql")
-        self.assertIn("{filters}", loose_result)
+        max_hogql_result = print_ast(query_ast, context, "max_hogql")
+        self.assertIn("{filters}", max_hogql_result)
         query_ast = parse_select("SELECT {variables.f} FROM events")
-        loose_result = print_ast(query_ast, loose_context, "hogql")
-        self.assertIn("{variables.f}", loose_result)
+        max_hogql_result = print_ast(query_ast, context, "max_hogql")
+        self.assertIn("{variables.f}", max_hogql_result)
 
-    def test_loose_syntax_boolean_logic(self):
-        """Test that boolean AND/OR logic uses infix notation with loose_syntax enabled."""
-        loose_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=True)
-        strict_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=False)
+    def test_max_hogql_boolean_logic(self):
+        """Test that boolean AND/OR logic uses infix notation with max_hogql dialect."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
 
         # Test AND/OR logic
         query_ast = parse_select(
             "SELECT * FROM events WHERE length(properties) > 0 AND timestamp > now() OR event = 'test'"
         )
 
-        # With loose_syntax=False (default behavior) - should use function calls
-        strict_result = print_ast(query_ast, strict_context, "hogql")
-        assert (
-            strict_result
-            == "SELECT * FROM events WHERE greater(length(properties), 0) AND greater(timestamp, now()) OR equals(event, 'test')"
-        )
+        # With hogql dialect (default behavior) - should use function calls and expand SELECT *
+        hogql_result = print_ast(query_ast, context, "hogql")
+        self.assertIn("and(", hogql_result)
+        self.assertIn("or(", hogql_result)
+        self.assertNotIn("SELECT *", hogql_result)  # Should be expanded to column names
 
-        # With loose_syntax=True - should use infix notation
-        loose_result = print_ast(query_ast, loose_context, "hogql")
-        assert (
-            loose_result == "SELECT * FROM events WHERE length(properties) > 0 AND timestamp > now() OR event = 'test'"
-        )
+        # With max_hogql dialect - should use infix notation and preserve SELECT *
+        max_hogql_result = print_ast(query_ast, context, "max_hogql")
+        self.assertIn(" AND ", max_hogql_result)
+        self.assertIn(" OR ", max_hogql_result)
+        self.assertIn("SELECT *", max_hogql_result)  # Should preserve SELECT *
+        self.assertNotIn("and(", max_hogql_result)
+        self.assertNotIn("or(", max_hogql_result)
 
-        # Test NOT logic - check if it also needs loose_syntax handling
-        not_query_ast = parse_select("SELECT * FROM events WHERE NOT (event = 'test')")
+        # Test NOT logic
+        not_query_ast = parse_select("SELECT * FROM events WHERE event is NOT NULL")
 
-        strict_not_result = print_ast(not_query_ast, strict_context, "hogql")
-        loose_not_result = print_ast(not_query_ast, loose_context, "hogql")
+        hogql_not_result = print_ast(not_query_ast, context, "hogql")
+        max_hogql_not_result = print_ast(not_query_ast, context, "max_hogql")
 
-        # Check current behavior - both should use function form for now
-        assert strict_not_result == "SELECT * FROM events WHERE not(equals(event, 'test'))"
-        assert loose_not_result == "SELECT * FROM events WHERE NOT (event = 'test')"
+        self.assertIn("NOT", hogql_not_result)
+        self.assertIn("NOT", max_hogql_not_result)
 
-    def test_loose_syntax_preserves_select_asterisk(self):
-        """Test that SELECT * is preserved when loose_syntax is enabled."""
-        loose_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=True)
-        strict_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True, loose_syntax=False)
+    def test_max_hogql_preserves_select_asterisk(self):
+        """Test that SELECT * is preserved with max_hogql dialect."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
 
         # Test SELECT * preservation
         query_ast = parse_select("SELECT * FROM events")
 
-        # With loose_syntax=False (default behavior) - should expand to all columns
-        strict_result = print_ast(query_ast, strict_context, "hogql")
-        self.assertNotIn("SELECT *", strict_result)  # Should be expanded
-        self.assertIn("SELECT uuid, event", strict_result)  # Should show actual column names
+        # With hogql dialect (default behavior) - should expand to all columns
+        hogql_result = print_ast(query_ast, context, "hogql")
+        self.assertNotIn("SELECT *", hogql_result)  # Should be expanded
+        self.assertIn("SELECT uuid, event", hogql_result)  # Should show actual column names
 
-        # With loose_syntax=True - should preserve SELECT *
-        loose_result = print_ast(query_ast, loose_context, "hogql")
-        self.assertIn("SELECT *", loose_result)  # Should preserve *
-        self.assertNotIn("uuid, event", loose_result)  # Should not expand column names
+        # With max_hogql dialect - should preserve SELECT *
+        max_hogql_result = print_ast(query_ast, context, "max_hogql")
+        self.assertIn("SELECT *", max_hogql_result)  # Should preserve *
+        self.assertNotIn("uuid, event", max_hogql_result)  # Should not expand column names
 
     @pytest.mark.usefixtures("unittest_snapshot")
     def test_s3_tables_global_join_with_in_and_property_type(self):

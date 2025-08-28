@@ -65,7 +65,7 @@ def resolve_constant_data_type(constant: Any) -> ConstantType:
 
 
 def resolve_types_from_table(
-    expr: ast.Expr, table_chain: list[str], context: HogQLContext, dialect: Literal["hogql", "clickhouse"]
+    expr: ast.Expr, table_chain: list[str], context: HogQLContext, dialect: Literal["hogql", "clickhouse", "max_hogql"]
 ) -> ast.Expr:
     if context.database is None:
         raise QueryError("Database needs to be defined")
@@ -86,7 +86,7 @@ def resolve_types_from_table(
 def resolve_types(
     node: _T_AST,
     context: HogQLContext,
-    dialect: Literal["hogql", "clickhouse"],
+    dialect: Literal["hogql", "clickhouse", "max_hogql"],
     scopes: Optional[list[ast.SelectQueryType]] = None,
 ) -> _T_AST:
     return Resolver(scopes=scopes, context=context, dialect=dialect).visit(node)
@@ -108,7 +108,7 @@ class Resolver(CloningVisitor):
     def __init__(
         self,
         context: HogQLContext,
-        dialect: Literal["hogql", "clickhouse"] = "clickhouse",
+        dialect: Literal["hogql", "clickhouse", "max_hogql"] = "clickhouse",
         scopes: Optional[list[ast.SelectQueryType]] = None,
     ):
         super().__init__()
@@ -190,7 +190,7 @@ class Resolver(CloningVisitor):
         select_nodes = []
         for expr in node.select or []:
             new_expr = self.visit(expr)
-            if isinstance(new_expr.type, ast.AsteriskType) and not self.context.loose_syntax:
+            if isinstance(new_expr.type, ast.AsteriskType) and self.dialect != "max_hogql":
                 columns = self._asterisk_columns(new_expr.type, chain_prefix=new_expr.chain[:-1])
                 select_nodes.extend([self.visit(expr) for expr in columns])
             else:
@@ -757,7 +757,7 @@ class Resolver(CloningVisitor):
         return node
 
     def visit_placeholder(self, node: ast.Placeholder):
-        if not self.context.loose_syntax:
+        if self.dialect != "max_hogql":
             return super().visit_placeholder(node)
         return node
 

@@ -104,7 +104,7 @@ def to_printed_hogql(query: ast.Expr, team: Team, modifiers: Optional[HogQLQuery
 def print_ast(
     node: _T_AST,
     context: HogQLContext,
-    dialect: Literal["hogql", "clickhouse"],
+    dialect: Literal["hogql", "clickhouse", "max_hogql"],
     stack: Optional[list[ast.SelectQuery]] = None,
     settings: Optional[HogQLGlobalSettings] = None,
     pretty: bool = False,
@@ -125,7 +125,7 @@ def print_ast(
 def prepare_ast_for_printing(
     node: _T_AST,
     context: HogQLContext,
-    dialect: Literal["hogql", "clickhouse"],
+    dialect: Literal["hogql", "clickhouse", "max_hogql"],
     stack: Optional[list[ast.SelectQuery]] = None,
     settings: Optional[HogQLGlobalSettings] = None,
 ) -> _T_AST | None:
@@ -204,7 +204,7 @@ def prepare_ast_for_printing(
 def print_prepared_ast(
     node: _T_AST,
     context: HogQLContext,
-    dialect: Literal["hogql", "clickhouse"],
+    dialect: Literal["hogql", "clickhouse", "max_hogql"],
     stack: Optional[list[ast.SelectQuery]] = None,
     settings: Optional[HogQLGlobalSettings] = None,
     pretty: bool = False,
@@ -277,7 +277,7 @@ class _Printer(Visitor[str]):
     def __init__(
         self,
         context: HogQLContext,
-        dialect: Literal["hogql", "clickhouse"],
+        dialect: Literal["hogql", "clickhouse", "max_hogql"],
         stack: Optional[list[AST]] = None,
         settings: Optional[HogQLGlobalSettings] = None,
         pretty: bool = False,
@@ -589,12 +589,12 @@ class _Printer(Visitor[str]):
             join_strings.append(f"AS {self._print_identifier(node.alias)}")
 
         elif isinstance(node.type, ast.LazyTableType):
-            if self.dialect == "hogql":
+            if self.dialect in ["hogql", "max_hogql"]:
                 join_strings.append(self._print_identifier(node.type.table.to_printed_hogql()))
             else:
                 raise ImpossibleASTError(f"Unexpected LazyTableType for: {node.type.table.to_printed_hogql()}")
 
-        elif self.dialect == "hogql":
+        elif self.dialect in ["hogql", "max_hogql"]:
             join_strings.append(self.visit(node.table))
             if node.alias is not None:
                 join_strings.append(f"AS {self._print_identifier(node.alias)}")
@@ -636,26 +636,24 @@ class _Printer(Visitor[str]):
     def visit_and(self, node: ast.And):
         if len(node.exprs) == 1:
             return self.visit(node.exprs[0])
-        if self.context.loose_syntax:
+        if self.dialect == "max_hogql":
             return f" AND ".join([f"({self.visit(expr)})" for expr in node.exprs])
         return f"and({', '.join([self.visit(expr) for expr in node.exprs])})"
 
     def visit_or(self, node: ast.Or):
         if len(node.exprs) == 1:
             return self.visit(node.exprs[0])
-        if self.context.loose_syntax:
+        if self.dialect == "max_hogql":
             return f" OR ".join([f"({self.visit(expr)})" for expr in node.exprs])
         return f"or({', '.join([self.visit(expr) for expr in node.exprs])})"
 
     def visit_not(self, node: ast.Not):
-        if self.context.loose_syntax:
-            return f"NOT ({self.visit(node.expr)})"
         return f"not({self.visit(node.expr)})"
 
     def visit_tuple_access(self, node: ast.TupleAccess):
         visited_tuple = self.visit(node.tuple)
         visited_index = int(str(node.index))
-        symbol = "?." if self.dialect == "hogql" and node.nullish else "."
+        symbol = "?." if self.dialect in ["hogql", "max_hogql"] and node.nullish else "."
         if isinstance(node.tuple, ast.Field) or isinstance(node.tuple, ast.Tuple) or isinstance(node.tuple, ast.Call):
             return f"{visited_tuple}{symbol}{visited_index}"
         return f"({visited_tuple}){symbol}{visited_index}"
@@ -664,7 +662,7 @@ class _Printer(Visitor[str]):
         return f"tuple({', '.join([self.visit(expr) for expr in node.exprs])})"
 
     def visit_array_access(self, node: ast.ArrayAccess):
-        symbol = "?." if self.dialect == "hogql" and node.nullish else ""
+        symbol = "?." if self.dialect in ["hogql", "max_hogql"] and node.nullish else ""
         return f"{self.visit(node.array)}{symbol}[{self.visit(node.property)}]"
 
     def visit_array(self, node: ast.Array):
@@ -925,7 +923,7 @@ class _Printer(Visitor[str]):
             return "1" if constant_lambda(node.left.value, node.right.value) else "0"
 
         # Special cases when we should not add any null checks
-        if in_join_constraint or self.dialect == "hogql" or not_nullable:
+        if in_join_constraint or self.dialect in ["hogql", "max_hogql"] or not_nullable:
             return op
 
         # Special optimization for "Eq" operator
@@ -987,7 +985,7 @@ class _Printer(Visitor[str]):
             raise ImpossibleASTError("Impossible")
 
     def visit_constant(self, node: ast.Constant):
-        if self.dialect == "hogql":
+        if self.dialect in ["hogql", "max_hogql"]:
             # Inline everything in HogQL
             return self._print_escaped_string(node.value)
         elif (
@@ -1012,11 +1010,11 @@ class _Printer(Visitor[str]):
             return self.context.add_value(node.value)
 
     def visit_field(self, node: ast.Field):
-        if node.type is None and self.dialect != "hogql":
+        if node.type is None and self.dialect not in ["hogql", "max_hogql"]:
             field = ".".join([self._print_hogql_identifier_or_index(identifier) for identifier in node.chain])
             raise ImpossibleASTError(f"Field {field} has no type")
 
-        if self.dialect == "hogql":
+        if self.dialect in ["hogql", "max_hogql"]:
             if node.chain == ["*"]:
                 return "*"
             # When printing HogQL, we print the properties out as a chain as they are.
@@ -1077,7 +1075,7 @@ class _Printer(Visitor[str]):
         return None  # nothing to optimize
 
     def visit_call(self, node: ast.Call):
-        if self.context.loose_syntax:
+        if self.context.correct_function_names:
             corrected_name = find_function_name_case_insensitive(node.name)
             if corrected_name != node.name:
                 node.name = corrected_name
@@ -1182,7 +1180,7 @@ class _Printer(Visitor[str]):
             params_part = f"({', '.join(params)})" if params is not None else ""
             args_part = f"({f'DISTINCT ' if node.distinct else ''}{', '.join(args)})"
 
-            return f"{node.name if self.dialect == 'hogql' else func_meta.clickhouse_name}{params_part}{args_part}"
+            return f"{node.name if self.dialect in ['hogql', 'max_hogql'] else func_meta.clickhouse_name}{params_part}{args_part}"
 
         elif func_meta := find_hogql_function(node.name):
             validate_function_args(
@@ -1409,7 +1407,7 @@ class _Printer(Visitor[str]):
             raise QueryError(f"Unsupported function call '{node.name}(...)'")
 
     def visit_placeholder(self, node: ast.Placeholder):
-        if self.context.loose_syntax and node.chain:
+        if self.dialect == "max_hogql" and node.chain:
             field = ".".join([self._print_hogql_identifier_or_index(identifier) for identifier in node.chain])
             return f"{{{field}}}"
 
@@ -1767,7 +1765,7 @@ class _Printer(Visitor[str]):
             raise ImpossibleASTError(f"Invalid frame type {node.frame_type}")
 
     def visit_hogqlx_tag(self, node: ast.HogQLXTag):
-        if self.dialect != "hogql":
+        if self.dialect not in ["hogql", "max_hogql"]:
             raise QueryError("Printing HogQLX tags is only supported in HogQL queries")
 
         attributes = []
@@ -1796,7 +1794,7 @@ class _Printer(Visitor[str]):
         return tag
 
     def visit_hogqlx_attribute(self, node: ast.HogQLXAttribute):
-        if self.dialect != "hogql":
+        if self.dialect not in ["hogql", "max_hogql"]:
             raise QueryError("Printing HogQLX tags is only supported in HogQL queries")
         if isinstance(node.value, ast.HogQLXTag):
             value = self.visit(node.value)

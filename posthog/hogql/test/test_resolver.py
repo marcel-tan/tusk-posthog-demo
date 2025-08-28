@@ -790,11 +790,11 @@ class TestResolver(BaseTest):
         resolve_types(self._select(query), self.context, dialect="hogql")
         resolve_types(self._select(query), self.context, dialect="clickhouse")
 
-    def test_loose_syntax_placeholders(self):
-        """Test that placeholders are preserved when loose_syntax is enabled."""
+    def test_placeholders_for_max_hogql(self):
+        """Test that placeholders are preserved for max_hogql."""
         query = "SELECT {variables.f} FROM events"
         resolve_types(
             self._select(query),
-            HogQLContext(database=self.database, team_id=self.team.pk, enable_select_queries=True, loose_syntax=True),
-            dialect="hogql",
+            HogQLContext(database=self.database, team_id=self.team.pk, enable_select_queries=True),
+            dialect="max_hogql",
         )

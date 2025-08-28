@@ -46,7 +46,7 @@ class HogQLGeneratorMixin(AssistantContextMixin):
             database=database,
             enable_select_queries=True,
             limit_top_select=False,
-            loose_syntax=True,
+            correct_function_names=True,
         )
         return hogql_context
 
@@ -89,12 +89,12 @@ class HogQLGeneratorMixin(AssistantContextMixin):
         try:
             # First pass to fix the query syntax
             normalized_query = print_prepared_ast(
-                parse_select(query, placeholders={}), context=hogql_context, dialect="hogql", pretty=True
+                parse_select(query, placeholders={}), context=hogql_context, dialect="max_hogql", pretty=True
             )
             parsed_query = parse_select(normalized_query, placeholders={})
 
             # Validate that the query is valid
-            print_ast(parsed_query, context=hogql_context, dialect="hogql")
+            print_ast(parsed_query, context=hogql_context, dialect="max_hogql")
             # Return the normalized query
             return normalized_query
         except (ExposedHogQLError, HogQLNotImplementedError, ResolutionError) as err:
