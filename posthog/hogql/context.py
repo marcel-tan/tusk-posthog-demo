@@ -63,8 +63,10 @@ class HogQLContext:
 
     property_swapper: Optional["PropertySwapper"] = None
 
-    # Whether to correct function names
-    correct_function_names: bool = False
+    # Whether to preserve SELECT * instead of expanding to column names
+    preserve_select_asterisk: bool = False
+    # Whether to correct function names to lowercase (e.g., COUNT -> count)
+    preserve_placeholders: bool = False
 
     def __post_init__(self):
         if self.team:

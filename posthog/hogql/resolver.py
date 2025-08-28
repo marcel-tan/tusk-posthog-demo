@@ -65,7 +65,7 @@ def resolve_constant_data_type(constant: Any) -> ConstantType:
 
 
 def resolve_types_from_table(
-    expr: ast.Expr, table_chain: list[str], context: HogQLContext, dialect: Literal["hogql", "clickhouse", "max_hogql"]
+    expr: ast.Expr, table_chain: list[str], context: HogQLContext, dialect: Literal["hogql", "clickhouse"]
 ) -> ast.Expr:
     if context.database is None:
         raise QueryError("Database needs to be defined")
@@ -86,7 +86,7 @@ def resolve_types_from_table(
 def resolve_types(
     node: _T_AST,
     context: HogQLContext,
-    dialect: Literal["hogql", "clickhouse", "max_hogql"],
+    dialect: Literal["hogql", "clickhouse"],
     scopes: Optional[list[ast.SelectQueryType]] = None,
 ) -> _T_AST:
     return Resolver(scopes=scopes, context=context, dialect=dialect).visit(node)
@@ -108,7 +108,7 @@ class Resolver(CloningVisitor):
     def __init__(
         self,
         context: HogQLContext,
-        dialect: Literal["hogql", "clickhouse", "max_hogql"] = "clickhouse",
+        dialect: Literal["hogql", "clickhouse"] = "clickhouse",
         scopes: Optional[list[ast.SelectQueryType]] = None,
     ):
         super().__init__()
@@ -190,7 +190,7 @@ class Resolver(CloningVisitor):
         select_nodes = []
         for expr in node.select or []:
             new_expr = self.visit(expr)
-            if isinstance(new_expr.type, ast.AsteriskType) and self.dialect != "max_hogql":
+            if isinstance(new_expr.type, ast.AsteriskType) and not self.context.preserve_select_asterisk:
                 columns = self._asterisk_columns(new_expr.type, chain_prefix=new_expr.chain[:-1])
                 select_nodes.extend([self.visit(expr) for expr in columns])
             else:
@@ -757,8 +757,11 @@ class Resolver(CloningVisitor):
         return node
 
     def visit_placeholder(self, node: ast.Placeholder):
-        if self.dialect != "max_hogql":
+        if not self.context.preserve_placeholders:
             return super().visit_placeholder(node)
+        # Assign a default boolean type to preserved placeholders to avoid type resolution issues
+        # I might have caused this, but I'm not sure why.
+        node.type = ast.BooleanType(nullable=False)
         return node
 
     def visit_array_access(self, node: ast.ArrayAccess):

@@ -12,7 +12,7 @@ from posthog.hogql.errors import (
     ResolutionError,
 )
 from posthog.hogql.parser import parse_select
-from posthog.hogql.printer import print_ast, print_prepared_ast
+from posthog.hogql.printer import print_ast_max_hogql
 
 from posthog.sync import database_sync_to_async
 
@@ -46,7 +46,8 @@ class HogQLGeneratorMixin(AssistantContextMixin):
             database=database,
             enable_select_queries=True,
             limit_top_select=False,
-            correct_function_names=True,
+            preserve_select_asterisk=True,
+            preserve_placeholders=True,
         )
         return hogql_context
 
@@ -88,14 +89,13 @@ class HogQLGeneratorMixin(AssistantContextMixin):
             raise PydanticOutputParserException(llm_output="", validation_message="Output is empty")
         try:
             # First pass to fix the query syntax
-            normalized_query = print_prepared_ast(
-                parse_select(query, placeholders={}), context=hogql_context, dialect="max_hogql", pretty=True
-            )
-            parsed_query = parse_select(normalized_query, placeholders={})
+            normalized_query = print_ast_max_hogql(parse_select(query, placeholders={}), context=hogql_context)
+            # parsed_query = parse_select(normalized_query, placeholders={})
 
-            # Validate that the query is valid
-            print_ast(parsed_query, context=hogql_context, dialect="max_hogql")
-            # Return the normalized query
+            # # Validate that the query is valid
+            # final = print_ast_max_hogql(parsed_query, context=hogql_context)
+            # # Return the normalized query
+
             return normalized_query
         except (ExposedHogQLError, HogQLNotImplementedError, ResolutionError) as err:
             err_msg = str(err)

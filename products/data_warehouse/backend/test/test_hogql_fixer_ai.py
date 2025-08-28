@@ -20,7 +20,8 @@ def test_get_schema_description(snapshot):
         team_id=team.id,
         enable_select_queries=True,
         database=database,
-        correct_function_names=True,
+        preserve_placeholders=True,
+        preserve_select_asterisk=True,
         limit_top_select=False,
     )
 
@@ -53,7 +54,8 @@ def test_get_user_prompt(snapshot):
         team_id=team.id,
         enable_select_queries=True,
         database=database,
-        correct_function_names=True,
+        preserve_placeholders=True,
+        preserve_select_asterisk=True,
         limit_top_select=False,
     )
 

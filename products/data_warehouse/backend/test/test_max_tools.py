@@ -96,7 +96,7 @@ class TestDataWarehouseMaxTools(NonAtomicBaseTest):
             result = await tool.ainvoke(tool_call.model_dump(), config=cast(RunnableConfig, config))
             self.assertEqual(
                 result.content,
-                "```sql\nSELECT properties FROM events WHERE toString(properties.$os) = 'Max OS' AND length({filters}) > 0 AND {custom_filter} OR {custom_filter_3} ORDER BY properties.$os ASC\n```",
+                "```sql\nSELECT properties FROM events WHERE toString(properties.$os) = 'Mac OS' AND length({filters}) > 0 AND {custom_filter} OR {custom_filter_3} ORDER BY properties.$os ASC\n```",
             )
 
     # async def test_hogql_tool_quality_check_integration(self):
