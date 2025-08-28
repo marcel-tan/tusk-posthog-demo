@@ -5614,12 +5614,12 @@
                 (SELECT person.id AS id,
                         replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, '$some_prop'), ''), 'null'), '^"|"$', '') AS `properties___$some_prop`
                  FROM person
-                 WHERE and(equals(person.team_id, 99999), in(tuple(person.id, person.version),
-                                                               (SELECT person.id AS id, max(person.version) AS version
-                                                                FROM person
-                                                                WHERE equals(person.team_id, 99999)
-                                                                GROUP BY person.id
-                                                                HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
+                 WHERE and(equals(person.team_id, 99999), ifNull(in(tuple(person.id, person.version),
+                                                                      (SELECT person.id AS id, max(person.version) AS version
+                                                                       FROM person
+                                                                       WHERE equals(person.team_id, 99999)
+                                                                       GROUP BY person.id
+                                                                       HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0)))), 0)) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
               WHERE and(equals(e.team_id, 99999), greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toStartOfInterval(assumeNotNull(toDateTime('2019-12-28 00:00:00', 'UTC')), toIntervalDay(1))), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), assumeNotNull(toDateTime('2020-01-04 23:59:59', 'UTC'))), equals(e.event, 'sign up'))
               GROUP BY e.`$session_id`,
                        breakdown_value)
@@ -5680,12 +5680,12 @@
                 (SELECT person.id AS id,
                         replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, '$some_prop'), ''), 'null'), '^"|"$', '') AS `properties___$some_prop`
                  FROM person
-                 WHERE and(equals(person.team_id, 99999), in(tuple(person.id, person.version),
-                                                               (SELECT person.id AS id, max(person.version) AS version
-                                                                FROM person
-                                                                WHERE equals(person.team_id, 99999)
-                                                                GROUP BY person.id
-                                                                HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
+                 WHERE and(equals(person.team_id, 99999), ifNull(in(tuple(person.id, person.version),
+                                                                      (SELECT person.id AS id, max(person.version) AS version
+                                                                       FROM person
+                                                                       WHERE equals(person.team_id, 99999)
+                                                                       GROUP BY person.id
+                                                                       HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0)))), 0)) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
               WHERE and(equals(e.team_id, 99999), greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toStartOfInterval(assumeNotNull(toDateTime('2019-12-28 00:00:00', 'UTC')), toIntervalDay(1))), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), assumeNotNull(toDateTime('2020-01-04 23:59:59', 'UTC'))), equals(e.event, 'sign up'))
               GROUP BY e.`$session_id`,
                        breakdown_value_1)
@@ -6529,13 +6529,13 @@
                 (SELECT person.id AS id,
                         replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', '') AS properties___name
                  FROM person
-                 WHERE and(equals(person.team_id, 99999), in(tuple(person.id, person.version),
-                                                               (SELECT person.id AS id, max(person.version) AS version
-                                                                FROM person
-                                                                WHERE equals(person.team_id, 99999)
-                                                                GROUP BY person.id
-                                                                HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
-              WHERE and(equals(e.team_id, 99999), and(equals(e.event, '$pageview'), in(e__person.properties___name, tuple('person-1', 'person-2'))), greaterOrEquals(timestamp, minus(assumeNotNull(toDateTime('2020-01-01 00:00:00', 'UTC')), toIntervalDay(7))), lessOrEquals(timestamp, assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC'))))
+                 WHERE and(equals(person.team_id, 99999), ifNull(in(tuple(person.id, person.version),
+                                                                      (SELECT person.id AS id, max(person.version) AS version
+                                                                       FROM person
+                                                                       WHERE equals(person.team_id, 99999)
+                                                                       GROUP BY person.id
+                                                                       HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0)))), 0)) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
+              WHERE and(equals(e.team_id, 99999), and(equals(e.event, '$pageview'), ifNull(in(e__person.properties___name, tuple('person-1', 'person-2')), 0)), greaterOrEquals(timestamp, minus(assumeNotNull(toDateTime('2020-01-01 00:00:00', 'UTC')), toIntervalDay(7))), lessOrEquals(timestamp, assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC'))))
               GROUP BY timestamp, actor_id) AS e
            CROSS JOIN
              (SELECT minus(toStartOfInterval(assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC')), toIntervalDay(1)), toIntervalDay(numbers.number)) AS timestamp
@@ -6588,13 +6588,13 @@
                 (SELECT person.id AS id,
                         nullIf(nullIf(person.pmat_name, ''), 'null') AS properties___name
                  FROM person
-                 WHERE and(equals(person.team_id, 99999), in(tuple(person.id, person.version),
-                                                               (SELECT person.id AS id, max(person.version) AS version
-                                                                FROM person
-                                                                WHERE equals(person.team_id, 99999)
-                                                                GROUP BY person.id
-                                                                HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))))) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
-              WHERE and(equals(e.team_id, 99999), and(equals(e.event, '$pageview'), in(e__person.properties___name, tuple('person-1', 'person-2'))), greaterOrEquals(timestamp, minus(assumeNotNull(toDateTime('2020-01-01 00:00:00', 'UTC')), toIntervalDay(7))), lessOrEquals(timestamp, assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC'))))
+                 WHERE and(equals(person.team_id, 99999), ifNull(in(tuple(person.id, person.version),
+                                                                      (SELECT person.id AS id, max(person.version) AS version
+                                                                       FROM person
+                                                                       WHERE equals(person.team_id, 99999)
+                                                                       GROUP BY person.id
+                                                                       HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0)))), 0)) SETTINGS optimize_aggregation_in_order=1) AS e__person ON equals(if(not(empty(e__override.distinct_id)), e__override.person_id, e.person_id), e__person.id)
+              WHERE and(equals(e.team_id, 99999), and(equals(e.event, '$pageview'), ifNull(in(e__person.properties___name, tuple('person-1', 'person-2')), 0)), greaterOrEquals(timestamp, minus(assumeNotNull(toDateTime('2020-01-01 00:00:00', 'UTC')), toIntervalDay(7))), lessOrEquals(timestamp, assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC'))))
               GROUP BY timestamp, actor_id) AS e
            CROSS JOIN
              (SELECT minus(toStartOfInterval(assumeNotNull(toDateTime('2020-01-12 23:59:59', 'UTC')), toIntervalDay(1)), toIntervalDay(numbers.number)) AS timestamp
