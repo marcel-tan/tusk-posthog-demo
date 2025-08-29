@@ -188,7 +188,9 @@ class HogQLQueryFixerTool(MaxTool):
 
     def _run_impl(self) -> tuple[str, str | None]:
         database = create_hogql_database(team=self._team)
-        hogql_context = HogQLContext(team=self._team, enable_select_queries=True, database=database)
+        hogql_context = HogQLContext(
+            team=self._team, enable_select_queries=True, database=database, loose_syntax=True, limit_top_select=False
+        )
 
         all_tables = database.get_all_tables()
         schema_description = _get_schema_description(self.context, hogql_context, database)
@@ -249,7 +251,8 @@ The newly updated query gave us this error:
         assert result.query is not None
         try:
             result.query = result.query.rstrip(";").strip()
-            print_ast(parse_select(result.query), context=hogql_context, dialect="clickhouse")
+
+            result.query = print_ast(parse_select(result.query), context=hogql_context, dialect="hogql")
         except (ExposedHogQLError, ResolutionError) as err:
             err_msg = str(err)
             if err_msg.startswith("no viable alternative"):

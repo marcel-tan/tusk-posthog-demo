@@ -85,10 +85,10 @@
                                                                                  (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                                                                                          person.id AS id
                                                                                   FROM person
-                                                                                  WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                                                                (SELECT where_optimization.id AS id
-                                                                                                                                 FROM person AS where_optimization
-                                                                                                                                 WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))))
+                                                                                  WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                                                                       (SELECT where_optimization.id AS id
+                                                                                                                                        FROM person AS where_optimization
+                                                                                                                                        WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))), 0))
                                                                                   GROUP BY person.id
                                                                                   HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                                                                WHERE ifNull(equals(persons.properties___email, 'test@posthog.com'), 0)
@@ -176,7 +176,7 @@
                         cohortpeople.cohort_id AS cohort_id,
                         cohortpeople.team_id AS team_id
         FROM cohortpeople
-        WHERE and(equals(cohortpeople.team_id, 99999), in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]))) AS cohort_people
+        WHERE and(equals(cohortpeople.team_id, 99999), ifNull(in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]), 0))) AS cohort_people
      WHERE and(ifNull(equals(cohort_people.cohort_id, 99999), 0), ifNull(equals(cohort_people.team_id, 99999), 0))
      LIMIT 1000000000) INTERSECT DISTINCT
     (SELECT source.id AS id
@@ -225,14 +225,13 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), in(e.event, tuple('$new_view'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), ifNull(in(e.event, tuple('$new_view')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
                  WHERE ifNull(equals(step_0, 1), 0)))
            GROUP BY aggregation_target,
                     steps
            HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                          and isNull(max(max_steps))))
-        WHERE in(steps,
-                 [2])
+        WHERE ifNull(in(steps, [2]), 0)
         ORDER BY aggregation_target ASC) AS source
      ORDER BY source.id ASC
      LIMIT 1000000000 SETTINGS optimize_aggregation_in_order=1,
@@ -325,7 +324,7 @@
                         cohortpeople.cohort_id AS cohort_id,
                         cohortpeople.team_id AS team_id
         FROM cohortpeople
-        WHERE and(equals(cohortpeople.team_id, 99999), in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]))) AS cohort_people
+        WHERE and(equals(cohortpeople.team_id, 99999), ifNull(in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]), 0))) AS cohort_people
      WHERE and(ifNull(equals(cohort_people.cohort_id, 99999), 0), ifNull(equals(cohort_people.team_id, 99999), 0))
      LIMIT 1000000000) INTERSECT DISTINCT
     (SELECT source.id AS id
@@ -371,10 +370,10 @@
                                   (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                           person.id AS id
                                    FROM person
-                                   WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                 (SELECT where_optimization.id AS id
-                                                                                  FROM person AS where_optimization
-                                                                                  WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))))
+                                   WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                        (SELECT where_optimization.id AS id
+                                                                                         FROM person AS where_optimization
+                                                                                         WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))), 0))
                                    GROUP BY person.id
                                    HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                 WHERE ifNull(equals(persons.properties___name, 'test'), 0)
@@ -464,10 +463,10 @@
                                   (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                           person.id AS id
                                    FROM person
-                                   WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                 (SELECT where_optimization.id AS id
-                                                                                  FROM person AS where_optimization
-                                                                                  WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))))
+                                   WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                        (SELECT where_optimization.id AS id
+                                                                                         FROM person AS where_optimization
+                                                                                         WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))), 0))
                                    GROUP BY person.id
                                    HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                 WHERE ifNull(equals(persons.properties___name, 'test'), 0)
@@ -609,10 +608,10 @@
                                   (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                           person.id AS id
                                    FROM person
-                                   WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                 (SELECT where_optimization.id AS id
-                                                                                  FROM person AS where_optimization
-                                                                                  WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))))
+                                   WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                        (SELECT where_optimization.id AS id
+                                                                                         FROM person AS where_optimization
+                                                                                         WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))), 0))
                                    GROUP BY person.id
                                    HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                 WHERE ifNull(equals(persons.properties___name, 'test'), 0)
@@ -702,10 +701,10 @@
                                   (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                           person.id AS id
                                    FROM person
-                                   WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                 (SELECT where_optimization.id AS id
-                                                                                  FROM person AS where_optimization
-                                                                                  WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))))
+                                   WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                        (SELECT where_optimization.id AS id
+                                                                                         FROM person AS where_optimization
+                                                                                         WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))), 0))
                                    GROUP BY person.id
                                    HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                 WHERE ifNull(equals(persons.properties___name, 'test'), 0)
@@ -795,10 +794,10 @@
                                   (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                           person.id AS id
                                    FROM person
-                                   WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                 (SELECT where_optimization.id AS id
-                                                                                  FROM person AS where_optimization
-                                                                                  WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))))
+                                   WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                        (SELECT where_optimization.id AS id
+                                                                                         FROM person AS where_optimization
+                                                                                         WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test'), 0)))), 0))
                                    GROUP BY person.id
                                    HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                 WHERE ifNull(equals(persons.properties___name, 'test'), 0)
@@ -995,14 +994,13 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), in(e.event, tuple('$pageview'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), ifNull(in(e.event, tuple('$pageview')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
                  WHERE ifNull(equals(step_0, 1), 0)))
            GROUP BY aggregation_target,
                     steps
            HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                          and isNull(max(max_steps))))
-        WHERE in(steps,
-                 [2])
+        WHERE ifNull(in(steps, [2]), 0)
         ORDER BY aggregation_target ASC) AS source
      ORDER BY source.id ASC
      LIMIT 1000000000 SETTINGS optimize_aggregation_in_order=1,
@@ -1111,14 +1109,13 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), in(e.event, tuple('$pageview'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), ifNull(in(e.event, tuple('$pageview')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
                  WHERE ifNull(equals(step_0, 1), 0)))
            GROUP BY aggregation_target,
                     steps
            HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                          and isNull(max(max_steps))))
-        WHERE in(steps,
-                 [2])
+        WHERE ifNull(in(steps, [2]), 0)
         ORDER BY aggregation_target ASC) AS source
      ORDER BY source.id ASC
      LIMIT 1000000000 SETTINGS optimize_aggregation_in_order=1,
@@ -1250,14 +1247,13 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), in(e.event, tuple('$pageview'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('today', 6, 'UTC'))), ifNull(in(e.event, tuple('$pageview')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))))
                  WHERE ifNull(equals(step_0, 1), 0)))
            GROUP BY aggregation_target,
                     steps
            HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                          and isNull(max(max_steps))))
-        WHERE in(steps,
-                 [2])
+        WHERE ifNull(in(steps, [2]), 0)
         ORDER BY aggregation_target ASC) AS source
      ORDER BY source.id ASC
      LIMIT 1000000000 SETTINGS optimize_aggregation_in_order=1,
@@ -1284,10 +1280,10 @@
        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                person.id AS id
         FROM person
-        WHERE and(equals(person.team_id, 99999), in(id,
-                                                      (SELECT where_optimization.id AS id
-                                                       FROM person AS where_optimization
-                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))))
+        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                             (SELECT where_optimization.id AS id
+                                                              FROM person AS where_optimization
+                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))), 0))
         GROUP BY person.id
         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
      WHERE ifNull(equals(persons.properties___email, 'test@posthog.com'), 0)
@@ -1468,10 +1464,10 @@
        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, '$sample_field'), ''), 'null'), '^"|"$', ''), person.version) AS `properties___$sample_field`,
                person.id AS id
         FROM person
-        WHERE and(equals(person.team_id, 99999), in(id,
-                                                      (SELECT where_optimization.id AS id
-                                                       FROM person AS where_optimization
-                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, '$sample_field'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))))
+        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                             (SELECT where_optimization.id AS id
+                                                              FROM person AS where_optimization
+                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, '$sample_field'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))), 0))
         GROUP BY person.id
         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
      WHERE ifNull(equals(persons.`properties___$sample_field`, 'test@posthog.com'), 0)
@@ -1561,10 +1557,10 @@
        (SELECT argMax(nullIf(nullIf(person.`pmat_$sample_field`, ''), 'null'), person.version) AS `properties___$sample_field`,
                person.id AS id
         FROM person
-        WHERE and(equals(person.team_id, 99999), in(id,
-                                                      (SELECT where_optimization.id AS id
-                                                       FROM person AS where_optimization
-                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(nullIf(nullIf(where_optimization.`pmat_$sample_field`, ''), 'null'), 'test@posthog.com'), 0)))))
+        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                             (SELECT where_optimization.id AS id
+                                                              FROM person AS where_optimization
+                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(nullIf(nullIf(where_optimization.`pmat_$sample_field`, ''), 'null'), 'test@posthog.com'), 0)))), 0))
         GROUP BY person.id
         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
      WHERE ifNull(equals(persons.`properties___$sample_field`, 'test@posthog.com'), 0)
@@ -1679,10 +1675,10 @@
         (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                 person.id AS id
          FROM person
-         WHERE and(equals(person.team_id, 99999), in(id,
-                                                       (SELECT where_optimization.id AS id
-                                                        FROM person AS where_optimization
-                                                        WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'special'), 0)))))
+         WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                              (SELECT where_optimization.id AS id
+                                                               FROM person AS where_optimization
+                                                               WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'special'), 0)))), 0))
          GROUP BY person.id
          HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
       WHERE ifNull(equals(persons.properties___name, 'special'), 0)
@@ -1723,10 +1719,10 @@
                                                                                  (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                                                                                          person.id AS id
                                                                                   FROM person
-                                                                                  WHERE and(equals(person.team_id, 99999), in(id,
-                                                                                                                                (SELECT where_optimization.id AS id
-                                                                                                                                 FROM person AS where_optimization
-                                                                                                                                 WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))))
+                                                                                  WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                                                                                       (SELECT where_optimization.id AS id
+                                                                                                                                        FROM person AS where_optimization
+                                                                                                                                        WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test@posthog.com'), 0)))), 0))
                                                                                   GROUP BY person.id
                                                                                   HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                                                                                WHERE ifNull(equals(persons.properties___email, 'test@posthog.com'), 0)
@@ -1805,10 +1801,10 @@
         (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                 person.id AS id
          FROM person
-         WHERE and(equals(person.team_id, 99999), in(id,
-                                                       (SELECT where_optimization.id AS id
-                                                        FROM person AS where_optimization
-                                                        WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test1@posthog.com'), 0)))))
+         WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                              (SELECT where_optimization.id AS id
+                                                               FROM person AS where_optimization
+                                                               WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test1@posthog.com'), 0)))), 0))
          GROUP BY person.id
          HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
       WHERE ifNull(equals(persons.properties___email, 'test1@posthog.com'), 0)
@@ -1821,10 +1817,10 @@
         (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                 person.id AS id
          FROM person
-         WHERE and(equals(person.team_id, 99999), in(id,
-                                                       (SELECT where_optimization.id AS id
-                                                        FROM person AS where_optimization
-                                                        WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test2@posthog.com'), 0)))))
+         WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                              (SELECT where_optimization.id AS id
+                                                               FROM person AS where_optimization
+                                                               WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test2@posthog.com'), 0)))), 0))
          GROUP BY person.id
          HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
       WHERE ifNull(equals(persons.properties___email, 'test2@posthog.com'), 0)
@@ -1837,10 +1833,10 @@
                        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                                person.id AS id
                         FROM person
-                        WHERE and(equals(person.team_id, 99999), in(id,
-                                                                      (SELECT where_optimization.id AS id
-                                                                       FROM person AS where_optimization
-                                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test3'), 0)))))
+                        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                             (SELECT where_optimization.id AS id
+                                                                              FROM person AS where_optimization
+                                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test3'), 0)))), 0))
                         GROUP BY person.id
                         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                      WHERE ifNull(equals(persons.properties___name, 'test3'), 0)
@@ -1852,10 +1848,10 @@
                        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'email'), ''), 'null'), '^"|"$', ''), person.version) AS properties___email,
                                person.id AS id
                         FROM person
-                        WHERE and(equals(person.team_id, 99999), in(id,
-                                                                      (SELECT where_optimization.id AS id
-                                                                       FROM person AS where_optimization
-                                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test3@posthog.com'), 0)))))
+                        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                                             (SELECT where_optimization.id AS id
+                                                                              FROM person AS where_optimization
+                                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'email'), ''), 'null'), '^"|"$', ''), 'test3@posthog.com'), 0)))), 0))
                         GROUP BY person.id
                         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
                      WHERE ifNull(equals(persons.properties___email, 'test3@posthog.com'), 0)
@@ -1914,7 +1910,7 @@
                         cohortpeople.cohort_id AS cohort_id,
                         cohortpeople.team_id AS team_id
         FROM cohortpeople
-        WHERE and(equals(cohortpeople.team_id, 99999), in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]))) AS cohort_people
+        WHERE and(equals(cohortpeople.team_id, 99999), ifNull(in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]), 0))) AS cohort_people
      WHERE and(ifNull(equals(cohort_people.cohort_id, 99999), 0), ifNull(equals(cohort_people.team_id, 99999), 0))
      LIMIT 1000000000)
   UNION DISTINCT
@@ -1923,10 +1919,10 @@
        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                person.id AS id
         FROM person
-        WHERE and(equals(person.team_id, 99999), in(id,
-                                                      (SELECT where_optimization.id AS id
-                                                       FROM person AS where_optimization
-                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test2'), 0)))))
+        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                             (SELECT where_optimization.id AS id
+                                                              FROM person AS where_optimization
+                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test2'), 0)))), 0))
         GROUP BY person.id
         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
      WHERE ifNull(equals(persons.properties___name, 'test2'), 0)
@@ -1953,7 +1949,7 @@
                         cohortpeople.cohort_id AS cohort_id,
                         cohortpeople.team_id AS team_id
         FROM cohortpeople
-        WHERE and(equals(cohortpeople.team_id, 99999), in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]))) AS cohort_people
+        WHERE and(equals(cohortpeople.team_id, 99999), ifNull(in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]), 0))) AS cohort_people
      WHERE and(ifNull(equals(cohort_people.cohort_id, 99999), 0), ifNull(equals(cohort_people.team_id, 99999), 0))
      LIMIT 1000000000)
   UNION DISTINCT
@@ -1962,10 +1958,10 @@
        (SELECT argMax(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(person.properties, 'name'), ''), 'null'), '^"|"$', ''), person.version) AS properties___name,
                person.id AS id
         FROM person
-        WHERE and(equals(person.team_id, 99999), in(id,
-                                                      (SELECT where_optimization.id AS id
-                                                       FROM person AS where_optimization
-                                                       WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test2'), 0)))))
+        WHERE and(equals(person.team_id, 99999), ifNull(in(id,
+                                                             (SELECT where_optimization.id AS id
+                                                              FROM person AS where_optimization
+                                                              WHERE and(equals(where_optimization.team_id, 99999), ifNull(equals(replaceRegexpAll(nullIf(nullIf(JSONExtractRaw(where_optimization.properties, 'name'), ''), 'null'), '^"|"$', ''), 'test2'), 0)))), 0))
         GROUP BY person.id
         HAVING and(ifNull(equals(argMax(person.is_deleted, person.version), 0), 0), ifNull(less(argMax(toTimeZone(person.created_at, 'UTC'), person.version), plus(now64(6, 'UTC'), toIntervalDay(1))), 0))) AS persons
      WHERE ifNull(equals(persons.properties___name, 'test2'), 0)
@@ -2262,7 +2258,7 @@
                         cohortpeople.cohort_id AS cohort_id,
                         cohortpeople.team_id AS team_id
         FROM cohortpeople
-        WHERE and(equals(cohortpeople.team_id, 99999), in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]))) AS cohort_people
+        WHERE and(equals(cohortpeople.team_id, 99999), ifNull(in(tuple(cohortpeople.cohort_id, cohortpeople.version), [(99999, 0)]), 0))) AS cohort_people
      WHERE and(ifNull(equals(cohort_people.cohort_id, 99999), 0), ifNull(equals(cohort_people.team_id, 99999), 0))
      LIMIT 1000000000)
   UNION DISTINCT

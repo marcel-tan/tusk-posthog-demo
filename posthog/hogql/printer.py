@@ -42,6 +42,7 @@ from posthog.hogql.functions import (
 from posthog.hogql.functions.mapping import (
     ALL_EXPOSED_FUNCTION_NAMES,
     HOGQL_COMPARISON_MAPPING,
+    find_function_name_case_insensitive,
     is_allowed_parametric_function,
     validate_function_args,
 )
@@ -100,6 +101,48 @@ def to_printed_hogql(query: ast.Expr, team: Team, modifiers: Optional[HogQLQuery
     )
 
 
+def print_ast_max_hogql(
+    node: _T_AST,
+    context: HogQLContext,
+    stack: Optional[list[ast.SelectQuery]] = None,
+    settings: Optional[HogQLGlobalSettings] = None,
+    pretty: bool = False,
+) -> str:
+    """Prints HogQL AST using the _MaxPrinter with infix boolean operators and SELECT * preservation"""
+
+    prepared_ast = prepare_ast_for_printing(node=node, context=context, dialect="hogql", stack=stack, settings=settings)
+    if prepared_ast is None:
+        return ""
+    return print_prepared_max_hogql(
+        node=prepared_ast,
+        context=context,
+        stack=stack,
+        settings=settings,
+        pretty=pretty,
+    )
+
+
+def print_prepared_max_hogql(
+    node: _T_AST,
+    context: HogQLContext,
+    stack: Optional[list[ast.SelectQuery]] = None,
+    settings: Optional[HogQLGlobalSettings] = None,
+    pretty: bool = False,
+) -> str:
+    """Prints a prepared HogQL AST using the _MaxPrinter"""
+    return (
+        _MaxPrinter(
+            context=context,
+            dialect="hogql",
+            stack=stack or [],
+            settings=settings,
+            pretty=pretty,
+        )
+        .visit(node)
+        .strip()
+    )
+
+
 def print_ast(
     node: _T_AST,
     context: HogQLContext,
@@ -144,7 +187,12 @@ def prepare_ast_for_printing(
         with context.timings.measure("resolve_in_cohorts_conjoined"):
             resolve_in_cohorts_conjoined(node, dialect, context, stack)
     with context.timings.measure("resolve_types"):
-        node = resolve_types(node, context, dialect=dialect, scopes=[node.type for node in stack] if stack else None)
+        node = resolve_types(
+            node,
+            context,
+            dialect=dialect,
+            scopes=[node.type for node in stack] if stack else None,
+        )
 
     if dialect == "clickhouse":
         with context.timings.measure("resolve_property_types"):
@@ -806,6 +854,51 @@ class _Printer(Visitor[str]):
 
         return None  # nothing to optimize
 
+    def _format_compare_operation(self, node: ast.CompareOperation, left: str, right: str):
+        """Format comparison operation - can be overridden for different syntax styles."""
+        if node.op == ast.CompareOperationOp.Eq:
+            return f"equals({left}, {right})"
+        elif node.op == ast.CompareOperationOp.NotEq:
+            return f"notEquals({left}, {right})"
+        elif node.op == ast.CompareOperationOp.Like:
+            return f"like({left}, {right})"
+        elif node.op == ast.CompareOperationOp.NotLike:
+            return f"notLike({left}, {right})"
+        elif node.op == ast.CompareOperationOp.ILike:
+            return f"ilike({left}, {right})"
+        elif node.op == ast.CompareOperationOp.NotILike:
+            return f"notILike({left}, {right})"
+        elif node.op == ast.CompareOperationOp.In:
+            return f"in({left}, {right})"
+        elif node.op == ast.CompareOperationOp.NotIn:
+            return f"notIn({left}, {right})"
+        elif node.op == ast.CompareOperationOp.GlobalIn:
+            return f"globalIn({left}, {right})"
+        elif node.op == ast.CompareOperationOp.GlobalNotIn:
+            return f"globalNotIn({left}, {right})"
+        elif node.op == ast.CompareOperationOp.Regex:
+            return f"match({left}, {right})"
+        elif node.op == ast.CompareOperationOp.NotRegex:
+            return f"not(match({left}, {right}))"
+        elif node.op == ast.CompareOperationOp.IRegex:
+            return f"match({left}, concat('(?i)', {right}))"
+        elif node.op == ast.CompareOperationOp.NotIRegex:
+            return f"not(match({left}, concat('(?i)', {right})))"
+        elif node.op == ast.CompareOperationOp.Gt:
+            return f"greater({left}, {right})"
+        elif node.op == ast.CompareOperationOp.GtEq:
+            return f"greaterOrEquals({left}, {right})"
+        elif node.op == ast.CompareOperationOp.Lt:
+            return f"less({left}, {right})"
+        elif node.op == ast.CompareOperationOp.LtEq:
+            return f"lessOrEquals({left}, {right})"
+        elif node.op == ast.CompareOperationOp.InCohort:
+            return f"{left} IN COHORT {right}"
+        elif node.op == ast.CompareOperationOp.NotInCohort:
+            return f"{left} NOT IN COHORT {right}"
+        else:
+            raise ImpossibleASTError(f"Unknown CompareOperationOp: {node.op.name}")
+
     def visit_compare_operation(self, node: ast.CompareOperation):
         # If either side of the operation is a property that is part of a property group, special optimizations may
         # apply here to ensure that data skipping indexes can be used when possible.
@@ -831,80 +924,56 @@ class _Printer(Visitor[str]):
         if hack_sessions_timestamp == left or hack_sessions_timestamp == right:
             not_nullable = True
 
+        # # Early returns for operations that don't need null handling
+        # if node.op in (ast.CompareOperationOp.In, ast.CompareOperationOp.NotIn):
+        #     return op
+
+        # Set up null handling metadata
         constant_lambda = None
         value_if_one_side_is_null = False
         value_if_both_sides_are_null = False
 
-        if node.op == ast.CompareOperationOp.Eq:
-            op = f"equals({left}, {right})"
-            constant_lambda = lambda left_op, right_op: left_op == right_op
-            value_if_both_sides_are_null = True
-        elif node.op == ast.CompareOperationOp.NotEq:
-            op = f"notEquals({left}, {right})"
-            constant_lambda = lambda left_op, right_op: left_op != right_op
-            value_if_one_side_is_null = True
-        elif node.op == ast.CompareOperationOp.Like:
-            op = f"like({left}, {right})"
-            value_if_both_sides_are_null = True
-        elif node.op == ast.CompareOperationOp.NotLike:
-            op = f"notLike({left}, {right})"
-            value_if_one_side_is_null = True
-        elif node.op == ast.CompareOperationOp.ILike:
-            op = f"ilike({left}, {right})"
-            value_if_both_sides_are_null = True
-        elif node.op == ast.CompareOperationOp.NotILike:
-            op = f"notILike({left}, {right})"
-            value_if_one_side_is_null = True
-        elif node.op == ast.CompareOperationOp.In:
-            op = f"in({left}, {right})"
-            return op
-        elif node.op == ast.CompareOperationOp.NotIn:
-            op = f"notIn({left}, {right})"
-            return op
-        elif node.op == ast.CompareOperationOp.GlobalIn:
-            op = f"globalIn({left}, {right})"
-        elif node.op == ast.CompareOperationOp.GlobalNotIn:
-            op = f"globalNotIn({left}, {right})"
-        elif node.op == ast.CompareOperationOp.Regex:
-            op = f"match({left}, {right})"
-            value_if_both_sides_are_null = True
-        elif node.op == ast.CompareOperationOp.NotRegex:
-            op = f"not(match({left}, {right}))"
-            value_if_one_side_is_null = True
-        elif node.op == ast.CompareOperationOp.IRegex:
-            op = f"match({left}, concat('(?i)', {right}))"
-            value_if_both_sides_are_null = True
-        elif node.op == ast.CompareOperationOp.NotIRegex:
-            op = f"not(match({left}, concat('(?i)', {right})))"
-            value_if_one_side_is_null = True
-        elif node.op == ast.CompareOperationOp.Gt:
-            op = f"greater({left}, {right})"
-            constant_lambda = lambda left_op, right_op: (
-                left_op > right_op if left_op is not None and right_op is not None else False
-            )
-        elif node.op == ast.CompareOperationOp.GtEq:
-            op = f"greaterOrEquals({left}, {right})"
-            constant_lambda = lambda left_op, right_op: (
-                left_op >= right_op if left_op is not None and right_op is not None else False
-            )
-        elif node.op == ast.CompareOperationOp.Lt:
-            op = f"less({left}, {right})"
-            constant_lambda = lambda left_op, right_op: (
-                left_op < right_op if left_op is not None and right_op is not None else False
-            )
-        elif node.op == ast.CompareOperationOp.LtEq:
-            op = f"lessOrEquals({left}, {right})"
-            constant_lambda = lambda left_op, right_op: (
-                left_op <= right_op if left_op is not None and right_op is not None else False
-            )
-        # only used for hogql direct printing (no prepare called)
-        elif node.op == ast.CompareOperationOp.InCohort:
-            op = f"{left} IN COHORT {right}"
-        # only used for hogql direct printing (no prepare called)
-        elif node.op == ast.CompareOperationOp.NotInCohort:
-            op = f"{left} NOT IN COHORT {right}"
-        else:
-            raise ImpossibleASTError(f"Unknown CompareOperationOp: {node.op.name}")
+        # if node.op == ast.CompareOperationOp.Eq:
+        #     constant_lambda = lambda left_op, right_op: left_op == right_op
+        #     value_if_both_sides_are_null = True
+        # elif node.op == ast.CompareOperationOp.NotEq:
+        #     constant_lambda = lambda left_op, right_op: left_op != right_op
+        #     value_if_one_side_is_null = True
+        # elif node.op == ast.CompareOperationOp.Like:
+        #     value_if_both_sides_are_null = True
+        # elif node.op == ast.CompareOperationOp.NotLike:
+        #     value_if_one_side_is_null = True
+        # elif node.op == ast.CompareOperationOp.ILike:
+        #     value_if_both_sides_are_null = True
+        # elif node.op == ast.CompareOperationOp.NotILike:
+        #     value_if_one_side_is_null = True
+        # elif node.op == ast.CompareOperationOp.Regex:
+        #     value_if_both_sides_are_null = True
+        # elif node.op == ast.CompareOperationOp.NotRegex:
+        #     value_if_one_side_is_null = True
+        # elif node.op == ast.CompareOperationOp.IRegex:
+        #     value_if_both_sides_are_null = True
+        # elif node.op == ast.CompareOperationOp.NotIRegex:
+        #     value_if_one_side_is_null = True
+        # elif node.op == ast.CompareOperationOp.Gt:
+        #     constant_lambda = lambda left_op, right_op: (
+        #         left_op > right_op if left_op is not None and right_op is not None else False
+        #     )
+        # elif node.op == ast.CompareOperationOp.GtEq:
+        #     constant_lambda = lambda left_op, right_op: (
+        #         left_op >= right_op if left_op is not None and right_op is not None else False
+        #     )
+        # elif node.op == ast.CompareOperationOp.Lt:
+        #     constant_lambda = lambda left_op, right_op: (
+        #         left_op < right_op if left_op is not None and right_op is not None else False
+        #     )
+        # elif node.op == ast.CompareOperationOp.LtEq:
+        #     constant_lambda = lambda left_op, right_op: (
+        #         left_op <= right_op if left_op is not None and right_op is not None else False
+        #     )
+
+        # Format the basic operation
+        op = self._format_compare_operation(node, left, right)
 
         # Try to see if we can take shortcuts
 
@@ -1000,7 +1069,7 @@ class _Printer(Visitor[str]):
             return self.context.add_value(node.value)
 
     def visit_field(self, node: ast.Field):
-        if node.type is None and self.dialect != "hogql":
+        if node.type is None and self.dialect == "hogql":
             field = ".".join([self._print_hogql_identifier_or_index(identifier) for identifier in node.chain])
             raise ImpossibleASTError(f"Field {field} has no type")
 
@@ -1393,6 +1462,9 @@ class _Printer(Visitor[str]):
             raise QueryError(f"Unsupported function call '{node.name}(...)'")
 
     def visit_placeholder(self, node: ast.Placeholder):
+        if self.context.preserve_placeholders and node.chain:
+            field = ".".join([self._print_hogql_identifier_or_index(identifier) for identifier in node.chain])
+            return f"{{{field}}}"
         if node.field is None:
             raise QueryError("You can not use placeholders here")
         raise QueryError(f"Unresolved placeholder: {{{node.field}}}")
@@ -1747,7 +1819,7 @@ class _Printer(Visitor[str]):
             raise ImpossibleASTError(f"Invalid frame type {node.frame_type}")
 
     def visit_hogqlx_tag(self, node: ast.HogQLXTag):
-        if self.dialect != "hogql":
+        if self.dialect == "hogql":
             raise QueryError("Printing HogQLX tags is only supported in HogQL queries")
 
         attributes = []
@@ -1776,7 +1848,7 @@ class _Printer(Visitor[str]):
         return tag
 
     def visit_hogqlx_attribute(self, node: ast.HogQLXAttribute):
-        if self.dialect != "hogql":
+        if self.dialect == "hogql":
             raise QueryError("Printing HogQLX tags is only supported in HogQL queries")
         if isinstance(node.value, ast.HogQLXTag):
             value = self.visit(node.value)
@@ -1886,3 +1958,78 @@ class _Printer(Visitor[str]):
             frame_start=ast.WindowFrameExpr(frame_type="PRECEDING", frame_value=None),
             frame_end=ast.WindowFrameExpr(frame_type="FOLLOWING", frame_value=None),
         )
+
+
+class _MaxPrinter(_Printer):
+    """
+    A printer that extends _Printer with "max" formatting features:
+    - Boolean operators use infix notation (A AND B instead of and(A, B))
+    - SELECT * is preserved instead of expanded (handled via context flags)
+    - Placeholder chains are preserved (handled via context flags)
+    """
+
+    def visit_and(self, node: ast.And):
+        if len(node.exprs) == 1:
+            return self.visit(node.exprs[0])
+        return f" AND ".join([self.visit(expr) for expr in node.exprs])
+
+    def visit_or(self, node: ast.Or):
+        if len(node.exprs) == 1:
+            return self.visit(node.exprs[0])
+        return f" OR ".join([self.visit(expr) for expr in node.exprs])
+
+    def visit_not(self, node: ast.Not):
+        return f"NOT ({self.visit(node.expr)})"
+
+    def visit_placeholder(self, node: ast.Placeholder):
+        if self.context.preserve_placeholders and node.chain:
+            field = ".".join([self._print_hogql_identifier_or_index(identifier) for identifier in node.chain])
+            return f"{{{field}}}"
+        if node.field is None:
+            raise QueryError("You can not use placeholders here")
+        raise QueryError(f"Unresolved placeholder: {{{node.field}}}")
+
+    def visit_call(self, node: ast.Call):
+        corrected_name = find_function_name_case_insensitive(node.name)
+        if corrected_name != node.name:
+            # Create a copy of the node with corrected name instead of mutating the original
+            corrected_node = ast.Call(
+                name=corrected_name,
+                args=node.args,
+                params=node.params,
+                distinct=node.distinct,
+                type=node.type,
+            )
+            # corrected_node.type = node.type  # Preserve type information
+            return super().visit_call(corrected_node)
+        return super().visit_call(node)
+
+    def _format_compare_operation(self, node: ast.CompareOperation, left: str, right: str):
+        """Override comparison formatting to use infix notation where appropriate."""
+        if node.op == ast.CompareOperationOp.Eq:
+            return f"{left} = {right}"
+        elif node.op == ast.CompareOperationOp.NotEq:
+            return f"{left} != {right}"
+        elif node.op == ast.CompareOperationOp.Gt:
+            return f"{left} > {right}"
+        elif node.op == ast.CompareOperationOp.GtEq:
+            return f"{left} >= {right}"
+        elif node.op == ast.CompareOperationOp.Lt:
+            return f"{left} < {right}"
+        elif node.op == ast.CompareOperationOp.LtEq:
+            return f"{left} <= {right}"
+        elif node.op == ast.CompareOperationOp.Like:
+            return f"{left} LIKE {right}"
+        elif node.op == ast.CompareOperationOp.NotLike:
+            return f"{left} NOT LIKE {right}"
+        elif node.op == ast.CompareOperationOp.ILike:
+            return f"{left} ILIKE {right}"
+        elif node.op == ast.CompareOperationOp.NotILike:
+            return f"{left} NOT ILIKE {right}"
+        elif node.op == ast.CompareOperationOp.In:
+            return f"{left} IN {right}"
+        elif node.op == ast.CompareOperationOp.NotIn:
+            return f"{left} NOT IN {right}"
+        else:
+            # For other operations, fall back to the parent implementation
+            return super()._format_compare_operation(node, left, right)

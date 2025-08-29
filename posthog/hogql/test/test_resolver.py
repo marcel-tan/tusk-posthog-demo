@@ -789,3 +789,12 @@ class TestResolver(BaseTest):
         query = "SELECT arrayMap(a -> concat(a, e.event), ['str']) FROM events e"
         resolve_types(self._select(query), self.context, dialect="hogql")
         resolve_types(self._select(query), self.context, dialect="clickhouse")
+
+    def test_placeholders_for_max_hogql(self):
+        """Test that placeholders are preserved for max_hogql."""
+        query = "SELECT {variables.f} FROM events"
+        resolve_types(
+            self._select(query),
+            HogQLContext(database=self.database, team_id=self.team.pk, enable_select_queries=True),
+            dialect="max_hogql",
+        )

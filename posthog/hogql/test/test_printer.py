@@ -23,7 +23,13 @@ from posthog.hogql.database.database import Database
 from posthog.hogql.database.models import DateDatabaseField, StringDatabaseField
 from posthog.hogql.errors import ExposedHogQLError, QueryError
 from posthog.hogql.parser import parse_expr, parse_select
-from posthog.hogql.printer import prepare_ast_for_printing, print_ast, print_prepared_ast, to_printed_hogql
+from posthog.hogql.printer import (
+    prepare_ast_for_printing,
+    print_ast,
+    print_ast_max_hogql,
+    print_prepared_ast,
+    to_printed_hogql,
+)
 from posthog.hogql.query import execute_hogql_query
 
 from posthog.clickhouse.client.execute import sync_execute
@@ -2563,6 +2569,89 @@ class TestPrinter(BaseTest):
         assert "GLOBAL LEFT JOIN" in printed  # Join #2
 
         assert clean_varying_query_parts(printed, replace_all_numbers=False) == self.snapshot  # type: ignore
+
+    def test_max_hogql_function_normalization(self):
+        """Test function name normalization with correct_function_names flag."""
+        normal_context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+        corrected_context = HogQLContext(
+            team_id=self.team.pk, enable_select_queries=True, preserve_select_asterisk=True, preserve_placeholders=True
+        )
+
+        # Test basic function normalization - aggregation functions
+        query_ast = parse_select("SELECT COUNT() FROM events")
+        normal_result = print_ast_max_hogql(query_ast, normal_context)
+        corrected_result = print_ast_max_hogql(query_ast, corrected_context)
+
+        self.assertIn("COUNT()", normal_result)
+        self.assertIn("count()", corrected_result)
+        self.assertNotIn("COUNT()", corrected_result)
+
+        # Test multiple aggregation functions
+        query_ast = parse_select("SELECT SUM(value), AVG(score), MAX(age) FROM events")
+        normal_result = print_ast_max_hogql(query_ast, normal_context)
+        corrected_result = print_ast_max_hogql(query_ast, corrected_context)
+
+        self.assertIn("SUM(", normal_result)
+        self.assertIn("AVG(", normal_result)
+        self.assertIn("MAX(", normal_result)
+        self.assertIn("sum(", corrected_result)
+        self.assertIn("avg(", corrected_result)
+        self.assertIn("max(", corrected_result)
+
+        query_ast = parse_select("SELECT countIF(active = 1) FROM events")
+        result = print_ast_max_hogql(query_ast, corrected_context)
+        self.assertIn("countIf(", result)
+
+    def test_max_hogql_preserves_placeholders_and_variables(self):
+        """Test that placeholders are preserved with print_ast_max_hogql."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+
+        query_ast = parse_select("SELECT {filters} FROM events")
+        max_hogql_result = print_ast_max_hogql(query_ast, context)
+        self.assertIn("{filters}", max_hogql_result)
+        query_ast = parse_select("SELECT {variables.f} FROM events")
+        max_hogql_result = print_ast_max_hogql(query_ast, context)
+        self.assertIn("{variables.f}", max_hogql_result)
+
+    def test_max_hogql_boolean_logic(self):
+        """Test that boolean AND/OR logic uses infix notation with print_ast_max_hogql."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+
+        # Test AND/OR logic
+        query_ast = parse_select(
+            "SELECT * FROM events WHERE length(properties) > 0 AND timestamp > now() OR event = 'test'"
+        )
+
+        # With standard print_ast - should use function calls and expand SELECT *
+        hogql_result = print_ast(query_ast, context, "hogql")
+        self.assertIn("and(", hogql_result)
+        self.assertIn("or(", hogql_result)
+        self.assertNotIn("SELECT *", hogql_result)  # Should be expanded to column names
+
+        # With print_ast_max_hogql - should use infix notation and preserve SELECT *
+        max_hogql_result = print_ast_max_hogql(query_ast, context)
+        self.assertIn(" AND ", max_hogql_result)
+        self.assertIn(" OR ", max_hogql_result)
+        self.assertIn("SELECT *", max_hogql_result)  # Should preserve SELECT *
+        self.assertNotIn("and(", max_hogql_result)
+        self.assertNotIn("or(", max_hogql_result)
+
+    def test_max_hogql_preserves_select_asterisk(self):
+        """Test that SELECT * is preserved with print_ast_max_hogql."""
+        context = HogQLContext(team_id=self.team.pk, enable_select_queries=True)
+
+        # Test SELECT * preservation
+        query_ast = parse_select("SELECT * FROM events")
+
+        # With standard print_ast - should expand to all columns
+        hogql_result = print_ast(query_ast, context, "hogql")
+        self.assertNotIn("SELECT *", hogql_result)  # Should be expanded
+        self.assertIn("SELECT uuid, event", hogql_result)  # Should show actual column names
+
+        # With print_ast_max_hogql - should preserve SELECT *
+        max_hogql_result = print_ast_max_hogql(query_ast, context)
+        self.assertIn("SELECT *", max_hogql_result)  # Should preserve *
+        self.assertNotIn("uuid, event", max_hogql_result)  # Should not expand column names
 
     @pytest.mark.usefixtures("unittest_snapshot")
     def test_s3_tables_global_join_with_in_and_property_type(self):

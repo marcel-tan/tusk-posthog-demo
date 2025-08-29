@@ -190,7 +190,7 @@ class Resolver(CloningVisitor):
         select_nodes = []
         for expr in node.select or []:
             new_expr = self.visit(expr)
-            if isinstance(new_expr.type, ast.AsteriskType):
+            if isinstance(new_expr.type, ast.AsteriskType) and not self.context.preserve_select_asterisk:
                 columns = self._asterisk_columns(new_expr.type, chain_prefix=new_expr.chain[:-1])
                 select_nodes.extend([self.visit(expr) for expr in columns])
             else:
@@ -754,6 +754,14 @@ class Resolver(CloningVisitor):
                 type=ast.FieldAliasType(alias=property_alias, type=node.type),
             )
 
+        return node
+
+    def visit_placeholder(self, node: ast.Placeholder):
+        if not self.context.preserve_placeholders:
+            return super().visit_placeholder(node)
+        # Assign a default boolean type to preserved placeholders to avoid type resolution issues
+        # I might have caused this, but I'm not sure why.
+        node.type = ast.BooleanType(nullable=False)
         return node
 
     def visit_array_access(self, node: ast.ArrayAccess):

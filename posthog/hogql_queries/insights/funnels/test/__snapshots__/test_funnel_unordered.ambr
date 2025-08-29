@@ -78,7 +78,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -130,7 +130,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
@@ -235,7 +235,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))) ARRAY
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))) ARRAY
                     JOIN prop_vals AS prop
                     WHERE ifNull(notEquals(prop, []), isNotNull(prop)
                                  or isNotNull([]))))
@@ -294,7 +294,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))) ARRAY
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0)))) ARRAY
                     JOIN prop_vals AS prop
                     WHERE ifNull(notEquals(prop, []), isNotNull(prop)
                                  or isNotNull([]))))
@@ -398,7 +398,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -450,7 +450,7 @@
                           WHERE equals(person_distinct_id_overrides.team_id, 99999)
                           GROUP BY person_distinct_id_overrides.distinct_id
                           HAVING ifNull(equals(argMax(person_distinct_id_overrides.is_deleted, person_distinct_id_overrides.version), 0), 0) SETTINGS optimize_aggregation_in_order=1) AS e__override ON equals(e.distinct_id, e__override.distinct_id)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
@@ -570,7 +570,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -634,7 +634,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -698,7 +698,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
@@ -818,7 +818,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -882,7 +882,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -946,7 +946,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up')), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-01 00:00:00.000000', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('2020-01-08 23:59:59.999999', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0), and(notEquals(aggregation_target, ''), isNotNull(aggregation_target))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
@@ -1073,7 +1073,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1144,7 +1144,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1215,7 +1215,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
@@ -1330,7 +1330,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1401,7 +1401,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1472,15 +1472,15 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
                  prop
         HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                       and isNull(max(max_steps))))
-     WHERE and(in(steps, [1, 2, 3]), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('finance'))), isNull(arrayFlatten(array(prop)))
-                                            and isNull(arrayFlatten(array('finance')))))
+     WHERE and(ifNull(in(steps, [1, 2, 3]), 0), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('finance'))), isNull(arrayFlatten(array(prop)))
+                                                       and isNull(arrayFlatten(array('finance')))))
      ORDER BY aggregation_target ASC) AS source
   ORDER BY source.id ASC
   LIMIT 101
@@ -1592,7 +1592,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1663,7 +1663,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1734,15 +1734,15 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
                  prop
         HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                       and isNull(max(max_steps))))
-     WHERE and(in(steps, [2, 3]), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('finance'))), isNull(arrayFlatten(array(prop)))
-                                         and isNull(arrayFlatten(array('finance')))))
+     WHERE and(ifNull(in(steps, [2, 3]), 0), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('finance'))), isNull(arrayFlatten(array(prop)))
+                                                    and isNull(arrayFlatten(array('finance')))))
      ORDER BY aggregation_target ASC) AS source
   ORDER BY source.id ASC
   LIMIT 101
@@ -1854,7 +1854,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1925,7 +1925,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -1996,15 +1996,15 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
                  prop
         HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                       and isNull(max(max_steps))))
-     WHERE and(in(steps, [1, 2, 3]), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('technology'))), isNull(arrayFlatten(array(prop)))
-                                            and isNull(arrayFlatten(array('technology')))))
+     WHERE and(ifNull(in(steps, [1, 2, 3]), 0), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('technology'))), isNull(arrayFlatten(array(prop)))
+                                                       and isNull(arrayFlatten(array('technology')))))
      ORDER BY aggregation_target ASC) AS source
   ORDER BY source.id ASC
   LIMIT 101
@@ -2116,7 +2116,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -2187,7 +2187,7 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)
               UNION ALL SELECT aggregation_target AS aggregation_target,
                                timestamp AS timestamp,
@@ -2258,15 +2258,15 @@
                           WHERE and(equals(groups.team_id, 99999), equals(index, 0))
                           GROUP BY groups.group_type_index,
                                    groups.group_key) AS e__group_0 ON equals(e.`$group_0`, e__group_0.key)
-                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), in(e.event, tuple('buy', 'play movie', 'sign up'))), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
+                       WHERE and(equals(e.team_id, 99999), and(and(greaterOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC')), lessOrEquals(toTimeZone(e.timestamp, 'UTC'), toDateTime64('explicit_redacted_timestamp', 6, 'UTC'))), ifNull(in(e.event, tuple('buy', 'play movie', 'sign up')), 0)), or(ifNull(equals(step_0, 1), 0), ifNull(equals(step_1, 1), 0), ifNull(equals(step_2, 1), 0))))))
               WHERE ifNull(equals(step_0, 1), 0)))
         GROUP BY aggregation_target,
                  steps,
                  prop
         HAVING ifNull(equals(steps, max(max_steps)), isNull(steps)
                       and isNull(max(max_steps))))
-     WHERE and(in(steps, [2, 3]), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('technology'))), isNull(arrayFlatten(array(prop)))
-                                         and isNull(arrayFlatten(array('technology')))))
+     WHERE and(ifNull(in(steps, [2, 3]), 0), ifNull(equals(arrayFlatten(array(prop)), arrayFlatten(array('technology'))), isNull(arrayFlatten(array(prop)))
+                                                    and isNull(arrayFlatten(array('technology')))))
      ORDER BY aggregation_target ASC) AS source
   ORDER BY source.id ASC
   LIMIT 101
