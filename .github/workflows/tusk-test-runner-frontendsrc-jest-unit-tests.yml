@@ -64,6 +64,9 @@ jobs:
           # Required for the test runner, do not remove this input
           commitSha: ${{ github.event.inputs.commitSha }}
 
+          # Required for test parallelization where available, do not remove.
+          runnerIndex: ${{ matrix.runnerIndex }}
+
           # Your Tusk auth token. It is recommended to add it to your repo's secrets.
           # Please adapt the secret name accordingly if you have named it differently.
           authToken: ${{ secrets.TUSK_AUTH_TOKEN }}
@@ -94,11 +97,8 @@ jobs:
           # {{file}} placeholder is required and will be replaced by Tusk with the file being tested.
           # Example (pytest): "pytest {{file}}"
           # If your test output is known to contain a lot of console logs, we recommend suppressing these logs (e.g., use --silent / --quiet flags or equivalent).
-          testScript: 'jest test (${{ matrix.segment }} - ${{ matrix.chunk }})'
+          testScript: 'pnpm test:unit --maxWorkers=2 --shard=${{ matrix.chunk }}/3'
 
           # The runner may run tests in parallel.
           # Set this value to 1 if you know that your tests should not be run concurrently in each environment.
           # maxConcurrency: 1
-
-        # Required for test parallelization where available, do not remove.
-        runnerIndex: ${{ matrix.runnerIndex }}
