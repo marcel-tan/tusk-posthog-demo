@@ -69,7 +69,7 @@ jobs:
 
           # Your Tusk auth token. It is recommended to add it to your repo's secrets.
           # Please adapt the secret name accordingly if you have named it differently.
-          authToken: ${{ secrets.TUSK_AUTH_TOKEN }}
+          authToken: ${{ secrets.TUSK_FRONTEND }}
 
           # The directory containing your service code. If you have a monorepo containing multiple
           # services, create a separate workflow for each service with a different (and non-overlapping) appDir.
