@@ -121,8 +121,8 @@ class ClickhouseCluster:
                     # otherwise, we will use the default port.
                     port=port if (settings.E2E_TESTING or settings.DEBUG) else None,
                 ),
-                shard_num if host_cluster_role != "coordinator" else None,
-                replica_num if host_cluster_role != "coordinator" else None,
+                shard_num if host_cluster_role == NodeRole.DATA else None,
+                replica_num if host_cluster_role == NodeRole.DATA else None,
                 host_cluster_type,
                 host_cluster_role,
             )
@@ -191,7 +191,7 @@ class ClickhouseCluster:
         return {
             host
             for host in hosts
-            if (host.host_cluster_role == node_role.value.lower() or node_role == NodeRole.ALL)
+            if (host.host_cluster_role == node_role.value or node_role == NodeRole.ALL)
             and (host.host_cluster_type == workload.value.lower() or workload == Workload.DEFAULT)
         }
 
@@ -435,12 +435,16 @@ class Retryable(Generic[T]):  # note: this class exists primarily to allow a rea
 
     def __call__(self, client: Client) -> T:
         if isinstance(self.policy.exceptions, tuple):
-            is_retryable_exception = lambda e: isinstance(e, self.policy.exceptions)
+
+            def is_retryable_exception(e):
+                return isinstance(e, self.policy.exceptions)
         else:
             is_retryable_exception = self.policy.exceptions
 
         if not callable(self.policy.delay):
-            delay_fn = lambda _: self.policy.delay
+
+            def delay_fn(_):
+                return self.policy.delay
         else:
             delay_fn = self.policy.delay
 

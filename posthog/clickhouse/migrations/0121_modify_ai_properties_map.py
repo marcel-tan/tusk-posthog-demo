@@ -8,7 +8,11 @@ operations = [
         for statement in [*property_groups.get_alter_modify_statements("sharded_events", "properties", "ai")]
     ],
     *[
-        run_sql_with_exceptions(statement, node_role=NodeRole.ALL)
+        run_sql_with_exceptions(statement, node_role=NodeRole.DATA)
+        for statement in [*property_groups.get_alter_modify_statements("events", "properties", "ai")]
+    ],
+    *[
+        run_sql_with_exceptions(statement, node_role=NodeRole.COORDINATOR)
         for statement in [*property_groups.get_alter_modify_statements("events", "properties", "ai")]
     ],
 ]
