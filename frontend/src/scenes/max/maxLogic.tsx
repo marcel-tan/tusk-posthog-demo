@@ -10,6 +10,7 @@ import { lemonToast } from 'lib/lemon-ui/LemonToast/LemonToast'
 import { IconSurveys } from 'lib/lemon-ui/icons'
 import { objectsEqual, uuid } from 'lib/utils'
 import { permanentlyMount } from 'lib/utils/kea-logic-builders'
+import { afterMountAndOrganization } from 'lib/utils/kea-logic-builders'
 import { maxSettingsLogic } from 'scenes/settings/environment/maxSettingsLogic'
 import { urls } from 'scenes/urls'
 
@@ -474,8 +475,10 @@ export const maxLogic = kea<maxLogicType>([
         ) {
             handleInitialPrompt(actions, sidePanelStateLogic.values.selectedTabOptions, values.allSuggestions)
         }
+    }),
 
-        // Load conversation history on mount
+    // Load conversation history only when organization is available
+    afterMountAndOrganization(({ actions }) => {
         actions.loadConversationHistory()
     }),
 

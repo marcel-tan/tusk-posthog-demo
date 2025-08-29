@@ -5,7 +5,7 @@ import { loaders } from 'kea-loaders'
 import api from 'lib/api'
 import { OrganizationMembershipLevel } from 'lib/constants'
 import { lemonToast } from 'lib/lemon-ui/LemonToast/LemonToast'
-import { permanentlyMount } from 'lib/utils/kea-logic-builders'
+import { afterMountAndOrganization, permanentlyMount } from 'lib/utils/kea-logic-builders'
 import { membershipLevelToName } from 'lib/utils/permissioning'
 import { organizationLogic } from 'scenes/organizationLogic'
 import { userLogic } from 'scenes/userLogic'
@@ -172,6 +172,10 @@ export const membersLogic = kea<membersLogicType>([
         },
 
         ensureAllMembersLoaded: async () => {
+            // if organization is not available, don't load members (loaded later using afterMountAndOrganization)
+            if (!organizationLogic.values.currentOrganization) {
+                return
+            }
             if (values.membersLoading) {
                 return
             }
@@ -187,6 +191,8 @@ export const membersLogic = kea<membersLogicType>([
             }
         },
     })),
-
+    afterMountAndOrganization(({ actions }) => {
+        actions.loadAllMembers()
+    }),
     permanentlyMount(),
 ])
