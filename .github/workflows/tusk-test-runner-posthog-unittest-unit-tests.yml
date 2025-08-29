@@ -1,0 +1,188 @@
+name: Tusk Test Runner - posthog unittest unit tests
+
+# Required for Tusk
+on:
+  workflow_dispatch:
+    inputs:
+      runId:
+        description: "Tusk Run ID"
+        required: true
+      tuskUrl:
+        description: "Tusk server URL"
+        required: true
+      commitSha:
+        description: "Commit SHA to checkout"
+        required: true
+      runnerIndexes:
+        description: "Runner indexes"
+        required: false
+        default: "[\"1\"]"
+
+jobs:
+  test-action:
+    name: Tusk Test Runner
+    runs-on: ubuntu-latest
+
+    env:
+      SECRET_KEY: '6b01eee4f945ca25045b5aab440b953461faf08693a9abbf1166dc7c6b9772da' # unsafe - for testing only
+      DATABASE_URL: 'postgres://posthog:posthog@localhost:5432/posthog'
+      REDIS_URL: 'redis://localhost'
+      CLICKHOUSE_HOST: 'localhost'
+      CLICKHOUSE_SECURE: 'False'
+      CLICKHOUSE_VERIFY: 'False'
+      TEST: 1
+      CLICKHOUSE_SERVER_IMAGE_VERSION: ${{ github.event.inputs.clickhouseServerVersion || '' }}
+      OBJECT_STORAGE_ENABLED: 'True'
+      OBJECT_STORAGE_ENDPOINT: 'http://localhost:19000'
+      OBJECT_STORAGE_ACCESS_KEY_ID: 'object_storage_root_user'
+      OBJECT_STORAGE_SECRET_ACCESS_KEY: 'object_storage_root_password'
+      DISPLAY: ':99.0'
+
+services:
+  postgres:
+    image: postgres:12
+    env:
+      POSTGRES_USER: posthog
+      POSTGRES_PASSWORD: posthog
+      POSTGRES_DB: posthog
+    ports:
+      - 5432:5432
+  redis:
+    image: redis:6.2.7-alpine
+    ports:
+      - 6379:6379
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.8.7.41
+    ports:
+      - 8123:8123
+      - 9000:9000
+      - 9440:9440
+  kafka:
+    image: bitnami/kafka:2.8.1-debian-10-r99
+    ports:
+      - 9092:9092
+    env:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  object_storage:
+    image: minio/minio
+    ports:
+      - 19000:19000
+    env:
+      MINIO_ROOT_USER: object_storage_root_user
+      MINIO_ROOT_PASSWORD: object_storage_root_password
+    command: server /data --console-address ":19000"
+
+    # Required for test parallelization where available, do not remove.
+    strategy:
+      matrix:
+        runnerIndex: ${{ fromJson(github.event.inputs.runnerIndexes) }}
+
+    steps:
+      - name: Checkout
+        id: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.commitSha }} # Required for Tusk to access files for the commit being tested
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11.9
+          cache: 'pip'
+          cache-dependency-path: '**/requirements*.txt'
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # uv is a fast pip alternative: https://github.com/astral-sh/uv/
+      - run: pip install uv
+
+      - name: Install SAML (python3-saml) dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install libxml2-dev libxmlsec1 libxmlsec1-dev libxmlsec1-openssl
+
+      - name: Install Python dependencies
+        run: |
+          uv pip install --system -r requirements.txt -r requirements-dev.txt
+
+      - name: Add kafka host to /etc/hosts for kafka connectivity
+        run: sudo echo "127.0.0.1 kafka" | sudo tee -a /etc/hosts
+
+      - name: Set up needed files
+        run: |
+          mkdir -p frontend/dist
+          touch frontend/dist/index.html
+          touch frontend/dist/layout.html
+          touch frontend/dist/exporter.html
+
+      - name: Set environment variables
+        run: |
+          echo "SECRET_KEY=6b01eee4f945ca25045b5aab440b953461faf08693a9abbf1166dc7c6b9772da" >> $GITHUB_ENV
+          echo "DATABASE_URL=postgres://posthog:posthog@localhost:5432/posthog" >> $GITHUB_ENV
+          echo "REDIS_URL=redis://localhost" >> $GITHUB_ENV
+          echo "CLICKHOUSE_HOST=localhost" >> $GITHUB_ENV
+          echo "CLICKHOUSE_SECURE=False" >> $GITHUB_ENV
+          echo "CLICKHOUSE_VERIFY=False" >> $GITHUB_ENV
+          echo "TEST=1" >> $GITHUB_ENV
+          echo "OBJECT_STORAGE_ENABLED=True" >> $GITHUB_ENV
+          echo "OBJECT_STORAGE_ENDPOINT=http://localhost:19000" >> $GITHUB_ENV
+          echo "OBJECT_STORAGE_ACCESS_KEY_ID=object_storage_root_user" >> $GITHUB_ENV
+          echo "OBJECT_STORAGE_SECRET_ACCESS_KEY=object_storage_root_password" >> $GITHUB_ENV
+          echo "DISPLAY=:99.0" >> $GITHUB_ENV
+
+      - name: Start runner
+        id: test-action
+        uses: Use-Tusk/test-runner@v1
+        # See https://github.com/Use-Tusk/test-runner for full details and examples.
+        with:
+          # Required for the test runner, do not remove this input
+          runId: ${{ github.event.inputs.runId }}
+
+          # Required for the test runner, do not remove this input
+          tuskUrl: ${{ github.event.inputs.tuskUrl }}
+
+          # Required for the test runner, do not remove this input
+          commitSha: ${{ github.event.inputs.commitSha }}
+
+          # Your Tusk auth token. It is recommended to add it to your repo's secrets.
+          # Please adapt the secret name accordingly if you have named it differently.
+          authToken: ${{ secrets.TUSK_AUTH_TOKEN }}
+
+          # The directory containing your service code. If you have a monorepo containing multiple
+          # services, create a separate workflow for each service with a different (and non-overlapping) appDir.
+          # appDir should be relative to the root of the repo.
+          # Remove this input if this doesn't apply to your repo (i.e., it is a single-service repo).
+          appDir: "posthog"
+
+          # You may specify the test framework if it is a different one
+          testFramework: "unittest"
+
+          # Test file regex to match all test files in the service
+          # This is relative to the root of the repo (i.e., the appDir should be included in it, if applicable).
+          testFileRegex: '<regex to match the test files with the test framework>'
+
+          # The script to run to lint the code (adapt accordingly).
+          # This should be a command that fixes lint errors, not just checking for them.
+          # {{file}} placeholder is required and will be replaced by Tusk with the file being linted.
+          # If you don't have a lint command, you can remove this input.
+          # Example (Python w/ black): "black {{file}}"
+          # Example (TypeScript w/ prettier + eslint): "npx prettier --write {{file}} && npx eslint --fix {{file}}"
+          # If you need to run a compilation check (e.g. tsc), contact support@usetusk.ai to ensure it is set up correctly.
+          lintScript: '<your lint command for {{file}}>'
+
+          # The script to run to test the code (adapt accordingly). Required for the test runner.
+          # {{file}} placeholder is required and will be replaced by Tusk with the file being tested.
+          # Example (pytest): "pytest {{file}}"
+          # If your test output is known to contain a lot of console logs, we recommend suppressing these logs (e.g., use --silent / --quiet flags or equivalent).
+          testScript: '<your test command for {{file}}>'
+
+          # The runner may run tests in parallel.
+          # Set this value to 1 if you know that your tests should not be run concurrently in each environment.
+          # maxConcurrency: 1
+
+          # Required for test parallelization where available, do not remove.
+          runnerIndex: ${{ matrix.runnerIndex }}
