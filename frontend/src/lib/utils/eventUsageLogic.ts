@@ -165,6 +165,8 @@ function usedCohortFilterIds(properties: AnyPropertyFilter[] | PropertyGroupFilt
     Takes a full list of filters for an insight and sanitizes any potentially sensitive info to report usage
 */
 function sanitizeFilterParams(filters: AnyPartialFilterType): Record<string, any> {
+    // [UseTusk]
+    // This function sanitizes filter parameters for analytics and needs testing for various filter combinations
     const { interval, date_from, date_to, filter_test_accounts, insight } = filters
 
     let properties_local: string[] = []
@@ -239,6 +241,8 @@ function sanitizeFilterParams(filters: AnyPartialFilterType): Record<string, any
 
 /** Takes a query and returns an object with "useful" properties that don't contain sensitive data. */
 function sanitizeQuery(query: Node | null): Record<string, string | number | boolean | undefined> {
+    // [UseTusk]
+    // This function sanitizes queries for analytics tracking and needs testing for various query types
     const payload: Record<string, string | number | boolean | undefined> = {
         query_kind: query?.kind,
         query_source_kind: isNodeWithSource(query) ? query.source.kind : undefined,
