@@ -102,8 +102,8 @@ jobs:
           # The script to run to generate coverage (adapt accordingly).
           # {{testFilePaths}} placeholder is required and will be replaced by Tusk with the test files.
           # Example (pytest): "pytest {{testFilePaths}} --cov=my_package"
-          # For Jest, coverage data should be written to /coverage/coverage-summary.json
-          coverageScript: 'pnpm jest {{testFilePaths}} --coverage --coverageReporters=json-summary --coverageDirectory=./coverage'
+          # For Jest, coverage data should be written to coverage/coverage-summary.json relative to appDir
+          coverageScript: 'pnpm jest {{testFilePaths}} --coverage --coverageReporters=json-summary --coverageDirectory=frontend/src/coverage'
 
           # The runner may run tests in parallel.
           # Set this value to 1 if you know that your tests should not be run concurrently in each environment.
