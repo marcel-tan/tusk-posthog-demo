@@ -99,6 +99,12 @@ jobs:
           # If your test output is known to contain a lot of console logs, we recommend suppressing these logs (e.g., use --silent / --quiet flags or equivalent).
           testScript: 'pnpm jest {{file}} --maxWorkers=2'
 
+          # The script to run to generate coverage (adapt accordingly).
+          # {{testFilePaths}} placeholder is required and will be replaced by Tusk with the test files.
+          # Example (pytest): "pytest {{testFilePaths}} --cov=my_package"
+          # For Jest, coverage data should be written to /coverage/coverage-summary.json
+          coverageScript: 'pnpm jest {{testFilePaths}} --coverage --coverageReporters=json-summary --coverageDirectory=./coverage'
+
           # The runner may run tests in parallel.
           # Set this value to 1 if you know that your tests should not be run concurrently in each environment.
           # maxConcurrency: 1
