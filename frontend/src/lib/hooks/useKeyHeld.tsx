@@ -2,8 +2,6 @@ import { useEventListener } from 'lib/hooks/useEventListener'
 import { DependencyList, useEffect, useRef, useState } from 'react'
 
 export function useKeyHeld(key: string, deps?: DependencyList): boolean {
-    // [UseTusk]
-    // This hook tracks keyboard key states with event listeners and needs testing for various key scenarios
     const keysHeldRef = useRef(new Set<string>())
     const [keyHeld, setKeyHeld] = useState(false)
 
