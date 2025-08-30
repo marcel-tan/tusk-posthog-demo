@@ -35,8 +35,6 @@ export async function uploadFile(file: File): Promise<MediaUploadResponse> {
 }
 
 export function useUploadFiles({
-    // [UseTusk]
-    // This hook manages file upload state and async operations with error handling - needs comprehensive testing
     onUpload,
     onError,
 }: {

@@ -7,8 +7,6 @@ import { ToolbarMenu } from '~/toolbar/bar/ToolbarMenu'
 import { toolbarLogic } from '../bar/toolbarLogic'
 
 export const HedgehogMenu = (): JSX.Element => {
-    // [UseTusk]
-    // Consider the toolbarLogic
     const { setHedgehogMode, setVisibleMenu } = useActions(toolbarLogic)
 
     return (

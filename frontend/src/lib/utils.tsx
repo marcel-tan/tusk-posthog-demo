@@ -1540,14 +1540,10 @@ export function median(input: number[]): number {
 }
 
 export function sum(input: number[]): number {
-    // [UseTusk]
-    // This function calculates sum of numbers and needs testing for edge cases like empty arrays and large numbers
     return input.reduce((a, b) => a + b, 0)
 }
 
 export function validateJson(value: string): boolean {
-    // [UseTusk]
-    // This function validates JSON strings and needs testing for various valid/invalid JSON scenarios
     try {
         JSON.parse(value)
         return true

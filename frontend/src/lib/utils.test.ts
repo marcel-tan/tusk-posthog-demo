@@ -47,7 +47,9 @@ import {
     selectorOperatorMap,
     shortTimeZone,
     stringOperatorMap,
+    sum,
     toParams,
+    validateJson,
 } from './utils'
 
 describe('lib/utils', () => {
@@ -852,6 +854,130 @@ describe('lib/utils', () => {
             expect(isLessThan2Days('13.123h')).toBeFalsy()
             expect(isLessThan2Days('-ab1-13h')).toBeFalsy()
             expect(isLessThan2Days('-1d-1h')).toBeFalsy()
+        })
+    })
+
+    describe('sum()', () => {
+        it('should return the correct total for an array of positive numbers', () => {
+            // Test with a simple array of positive integers
+            expect(sum([1, 2, 3, 4, 5])).toEqual(15)
+
+            // Test with another set of positive numbers
+            expect(sum([100, 200, 50])).toEqual(350)
+
+            // Test with a larger set of numbers
+            expect(sum([10, 20, 30, 40, 50, 60, 70, 80, 90, 100])).toEqual(550)
+        })
+
+        it('should return the correct total when given an array of negative numbers', () => {
+            // Test with a simple array of negative integers
+            expect(sum([-1, -2, -3, -4, -5])).toEqual(-15)
+
+            // Test with another set of negative numbers
+            expect(sum([-100, -200, -50])).toEqual(-350)
+
+            // Test with a larger set of negative numbers
+            expect(sum([-10, -20, -30, -40, -50, -60, -70, -80, -90, -100])).toEqual(-550)
+        })
+
+        it('should return the correct total when given an array of mixed positive and negative numbers', () => {
+            // Test with a simple array of mixed positive and negative integers
+            expect(sum([1, -2, 3, -4, 5])).toEqual(3)
+
+            // Test with another set of mixed numbers
+            expect(sum([100, -200, 50, -25])).toEqual(-75)
+
+            // Test with a larger set of mixed numbers
+            expect(sum([10, -20, 30, -40, 50, -60, 70, -80, 90, -100])).toEqual(-50)
+        })
+
+        it('should return the correct total when given an array of floating point numbers', () => {
+            // Test with a simple array of floating point numbers
+            expect(sum([1.1, 2.2, 3.3])).toEqual(6.6)
+
+            // Test with another set of floating point numbers, including different precisions
+            expect(sum([0.5, 1.75, 2.25, 3.0])).toEqual(7.5)
+
+            // Test with a larger set of floating point numbers
+            expect(sum([10.5, 20.25, 30.75, 40.0, 50.5, 60.25, 70.75, 80.0, 90.5, 100.25])).toEqual(553.75)
+        })
+
+        it('should return 0 when called with an empty array', () => {
+            expect(sum([])).toEqual(0)
+        })
+
+        it('should handle arrays with very large numbers', () => {
+            const maxSafeInteger = Number.MAX_SAFE_INTEGER
+            const largeNumbers = [maxSafeInteger, maxSafeInteger - 1, maxSafeInteger - 2]
+            const expectedSum = largeNumbers.reduce((a, b) => a + b, 0)
+
+            expect(sum(largeNumbers)).toEqual(expectedSum)
+
+            const evenLargerNumbers = [maxSafeInteger / 2, maxSafeInteger / 3, maxSafeInteger / 4]
+            const expectedSum2 = evenLargerNumbers.reduce((a, b) => a + b, 0)
+            expect(sum(evenLargerNumbers)).toEqual(expectedSum2)
+        })
+
+        it('should return the correct total for an array containing only one number', () => {
+            expect(sum([42])).toEqual(42)
+            expect(sum([0])).toEqual(0)
+            expect(sum([-10])).toEqual(-10)
+        })
+    })
+
+    describe('validateJson()', () => {
+        it("should return true when given a valid JSON string such as '{\"a\":1, \"b\":2}'", () => {
+            const validJsonString = '{"a":1, "b":2}'
+            expect(validateJson(validJsonString)).toBe(true)
+        })
+
+        it("should return true when given a valid empty JSON object '{}' or array '[]'", () => {
+            expect(validateJson('{}')).toBe(true)
+            expect(validateJson('[]')).toBe(true)
+        })
+
+        it("should return true when given a valid JSON primitive value such as '123', '\"hello\"', 'true', or 'null'", () => {
+            expect(validateJson('123')).toBe(true)
+            expect(validateJson('"hello"')).toBe(true)
+            expect(validateJson('true')).toBe(true)
+            expect(validateJson('null')).toBe(true)
+        })
+
+        it("should return false when given a string containing unbalanced braces like '{\"a\":1'", () => {
+            const unbalancedBracesString = '{"a":1'
+            expect(validateJson(unbalancedBracesString)).toBe(false)
+        })
+
+        it("should return false when given a JSON string with trailing commas like '{\"a\":1,}'", () => {
+            const jsonStringWithTrailingComma = '{"a":1,}'
+            expect(validateJson(jsonStringWithTrailingComma)).toBe(false)
+        })
+
+        it("should return false when given a string with JavaScript object notation that isn't valid JSON, such as '{a:1}' (unquoted property names) or \"{'a':1}\" (single quotes)", () => {
+            const invalidJsonString1 = '{a:1}'
+            const invalidJsonString2 = "{'a':1}"
+            expect(validateJson(invalidJsonString1)).toBe(false)
+            expect(validateJson(invalidJsonString2)).toBe(false)
+        })
+
+        it('should handle JSON strings containing various whitespace patterns', () => {
+            const jsonWithWhitespace = '{ \n  "a" : 1\t}';
+            expect(validateJson(jsonWithWhitespace)).toBe(true);
+        });
+
+        it('should return true when given a JSON string with Unicode characters', () => {
+            expect(validateJson('{"name":"José"}')).toBe(true)
+        })
+
+        it('should return true when given a JSON string with escaped Unicode characters', () => {
+            expect(validateJson('{"name":"\\u00A9"}')).toBe(true)
+        })
+
+        it('should return false when given non-string inputs like null, undefined, or objects', () => {
+            expect(validateJson(null as any)).toBe(false)
+            expect(validateJson(undefined as any)).toBe(false)
+            expect(validateJson({} as any)).toBe(false)
+            expect(validateJson([1, 2, 3] as any)).toBe(false)
         })
     })
 
