@@ -8,6 +8,7 @@ import { IntegrationType, SlackChannelType } from '~/types'
 import { slackIntegrationLogic } from './slackIntegrationLogic'
 
 const getSlackChannelOptions = (slackChannels?: SlackChannelType[] | null): LemonInputSelectOption[] | null => {
+    // [UseTusk]
     return slackChannels
         ? slackChannels.map((x) => ({
               key: `${x.id}|#${x.name}`,
@@ -30,6 +31,7 @@ export type SlackChannelPickerProps = {
 }
 
 export function SlackChannelPicker({ onChange, value, integration, disabled }: SlackChannelPickerProps): JSX.Element {
+    // [UseTusk]
     const { slackChannels, slackChannelsLoading, isMemberOfSlackChannel } = useValues(
         slackIntegrationLogic({ id: integration.id })
     )
