@@ -48,7 +48,7 @@ export function formatUserTimeZone(timeZone?: string, atDate?: Date): UserTimeZo
 /**
  * Formats a timezone offset as a string (e.g., '+05:30', '-08:00', '+00:00')
  */
-function formatTimeZoneOffset(offsetHours: number): string {
+export function formatTimeZoneOffset(offsetHours: number): string {
     const sign = offsetHours >= 0 ? '+' : '-'
     const absOffset = Math.abs(offsetHours)
     const hours = Math.floor(absOffset)
@@ -62,7 +62,7 @@ function formatTimeZoneOffset(offsetHours: number): string {
  * @param timeZone IANA timezone identifier
  * @returns Human-readable timezone name
  */
-function formatTimeZoneName(timeZone: string): string {
+export function formatTimeZoneName(timeZone: string): string {
     // Handle special cases
     if (timeZone === 'UTC') {
         return 'UTC'
