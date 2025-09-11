@@ -49,6 +49,8 @@ class ConcurrencyControllerItem<T> {
 }
 
 export class ConcurrencyController {
+    // [UseTusk]
+    // This class manages concurrent operations with priority queuing and would benefit from comprehensive unit tests
     _concurrencyLimit: number
 
     _current: ConcurrencyControllerItem<any>[] = []

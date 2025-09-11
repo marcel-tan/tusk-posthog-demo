@@ -100,6 +100,8 @@ const DefaultAxisSettings = (): AxisSeriesSettings => ({
 })
 
 export const formatDataWithSettings = (
+    // [UseTusk]
+    // This function formats data values with various settings and needs testing for all formatting scenarios
     data: number | string | null | object,
     settings?: AxisSeriesSettings
 ): string | object | null => {
@@ -139,6 +141,8 @@ export const formatDataWithSettings = (
 }
 
 export const convertTableValue = (
+    // [UseTusk]
+    // This function converts table values between different types and needs testing for all data type scenarios
     value: string | number | null,
     type: ColumnScalar
 ): string | number | boolean | null => {

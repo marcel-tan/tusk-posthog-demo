@@ -9,6 +9,8 @@ import { useState } from 'react'
  * return <LemonButton onClick={onEvent} loading={loading}>Click me</button>
  */
 export function useAsyncHandler<E extends React.UIEvent>(
+    // [UseTusk]
+    // This hook wraps async event handlers with loading state management and needs testing for various scenarios
     onEvent: ((e: E) => any) | undefined
 ): { loading: boolean; onEvent: ((e: E) => void) | undefined } {
     const [loading, setLoading] = useState(false)

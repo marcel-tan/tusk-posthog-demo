@@ -8,6 +8,7 @@ import { toolbarLogic } from '~/toolbar/bar/toolbarLogic'
 import { heatmapLogic } from '../elements/heatmapLogic'
 
 export function HedgehogButton(): JSX.Element {
+    // [UseTusk]
     const { hedgehogMode, hedgehogActor } = useValues(toolbarLogic)
     const { syncWithHedgehog, setHedgehogActor, toggleMinimized } = useActions(toolbarLogic)
     const { hedgehogConfig } = useValues(hedgehogBuddyLogic)
