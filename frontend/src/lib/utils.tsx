@@ -135,6 +135,256 @@ export function percentage(
     })
 }
 
+/** Format large numbers with K, M, B, T suffixes for better readability */
+export function formatLargeNumber(
+    value: number,
+    precision: number = 1,
+    threshold: number = 1000
+): string {
+    if (Math.abs(value) < threshold) {
+        return value.toString()
+    }
+
+    const units = ['', 'K', 'M', 'B', 'T', 'P']
+    const unitIndex = Math.floor(Math.log10(Math.abs(value)) / 3)
+    const scaledValue = value / Math.pow(1000, unitIndex)
+
+    if (unitIndex >= units.length) {
+        return value.toExponential(precision)
+    }
+
+    return `${scaledValue.toFixed(precision)}${units[unitIndex]}`
+}
+
+/** Calculate percentage change between two values */
+export function calculateGrowthRate(current: number, previous: number): number {
+    if (previous === 0) {
+        return current > 0 ? Infinity : 0
+    }
+    return (current - previous) / Math.abs(previous)
+}
+
+/** Format metric change with appropriate sign and styling hint */
+export function formatMetricChange(
+    current: number,
+    previous: number,
+    options: {
+        showSign?: boolean
+        asPercentage?: boolean
+        precision?: number
+    } = {}
+): { value: string; isPositive: boolean; isNeutral: boolean } {
+    const { showSign = true, asPercentage = true, precision = 1 } = options
+    const growthRate = calculateGrowthRate(current, previous)
+    
+    if (!isFinite(growthRate)) {
+        return {
+            value: previous === 0 ? (current > 0 ? '∞' : '0') : 'N/A',
+            isPositive: current > previous,
+            isNeutral: current === previous,
+        }
+    }
+
+    const absValue = Math.abs(growthRate)
+    let formattedValue: string
+
+    if (asPercentage) {
+        formattedValue = percentage(absValue, precision)
+    } else {
+        formattedValue = absValue.toFixed(precision)
+    }
+
+    const sign = showSign ? (growthRate > 0 ? '+' : growthRate < 0 ? '-' : '') : ''
+    
+    return {
+        value: `${sign}${formattedValue}`,
+        isPositive: growthRate > 0,
+        isNeutral: growthRate === 0,
+    }
+}
+
+/** Calculate conversion rate safely handling edge cases */
+export function calculateConversionRate(numerator: number, denominator: number): number {
+    if (denominator === 0 || !isFinite(numerator) || !isFinite(denominator)) {
+        return 0
+    }
+    return Math.max(0, Math.min(1, numerator / denominator))
+}
+
+/** Format a conversion rate as a percentage */
+export function formatConversionRate(
+    numerator: number,
+    denominator: number,
+    precision: number = 2
+): string {
+    const rate = calculateConversionRate(numerator, denominator)
+    return percentage(rate, precision)
+}
+
+/** Calculate and format a metric ratio with context */
+export function formatMetricRatio(
+    numerator: number,
+    denominator: number,
+    options: {
+        precision?: number
+        showRatio?: boolean
+        emptyState?: string
+    } = {}
+): string {
+    const { precision = 2, showRatio = false, emptyState = '–' } = options
+    
+    if (denominator === 0) {
+        return emptyState
+    }
+    
+    const ratio = numerator / denominator
+    
+    if (!isFinite(ratio)) {
+        return emptyState
+    }
+    
+    if (showRatio) {
+        return `${ratio.toFixed(precision)}:1`
+    }
+    
+    return ratio.toFixed(precision)
+}
+
+/** Calculate average of an array of numbers, handling edge cases */
+export function calculateAverage(values: number[]): number {
+    if (values.length === 0) {
+        return 0
+    }
+    const validValues = values.filter(v => isFinite(v))
+    if (validValues.length === 0) {
+        return 0
+    }
+    return validValues.reduce((sum, val) => sum + val, 0) / validValues.length
+}
+
+/** Calculate median of an array of numbers */
+export function calculateMedian(values: number[]): number {
+    if (values.length === 0) {
+        return 0
+    }
+    const validValues = values.filter(v => isFinite(v)).sort((a, b) => a - b)
+    if (validValues.length === 0) {
+        return 0
+    }
+    
+    const mid = Math.floor(validValues.length / 2)
+    return validValues.length % 2 === 0
+        ? (validValues[mid - 1] + validValues[mid]) / 2
+        : validValues[mid]
+}
+
+/** Calculate percentile of an array of numbers */
+export function calculatePercentile(values: number[], percentile: number): number {
+    if (values.length === 0 || percentile < 0 || percentile > 100) {
+        return 0
+    }
+    
+    const validValues = values.filter(v => isFinite(v)).sort((a, b) => a - b)
+    if (validValues.length === 0) {
+        return 0
+    }
+    
+    if (percentile === 0) return validValues[0]
+    if (percentile === 100) return validValues[validValues.length - 1]
+    
+    const index = (percentile / 100) * (validValues.length - 1)
+    const lower = Math.floor(index)
+    const upper = Math.ceil(index)
+    const weight = index % 1
+    
+    return validValues[lower] * (1 - weight) + validValues[upper] * weight
+}
+
+/** Format time duration in human readable format */
+export function formatDuration(
+    milliseconds: number,
+    options: {
+        maxUnits?: number
+        short?: boolean
+        precise?: boolean
+    } = {}
+): string {
+    const { maxUnits = 2, short = false, precise = false } = options
+    
+    if (milliseconds < 0) {
+        return 'Invalid duration'
+    }
+    
+    if (milliseconds === 0) {
+        return short ? '0ms' : '0 milliseconds'
+    }
+    
+    const units = [
+        { name: short ? 'd' : 'day', value: 24 * 60 * 60 * 1000 },
+        { name: short ? 'h' : 'hour', value: 60 * 60 * 1000 },
+        { name: short ? 'm' : 'minute', value: 60 * 1000 },
+        { name: short ? 's' : 'second', value: 1000 },
+        { name: 'ms', value: 1 },
+    ]
+    
+    const parts: string[] = []
+    let remaining = milliseconds
+    
+    for (const unit of units) {
+        if (remaining >= unit.value && parts.length < maxUnits) {
+            const count = Math.floor(remaining / unit.value)
+            remaining %= unit.value
+            
+            if (count > 0) {
+                const unitName = short ? unit.name : count === 1 ? unit.name : `${unit.name}s`
+                parts.push(`${count}${short ? '' : ' '}${unitName}`)
+            }
+        }
+        
+        if (!precise && parts.length >= maxUnits) {
+            break
+        }
+    }
+    
+    return parts.length > 0 ? parts.join(short ? ' ' : ', ') : '0ms'
+}
+
+/** Clamp a number between min and max values */
+export function clamp(value: number, min: number, max: number): number {
+    return Math.min(Math.max(value, min), max)
+}
+
+/** Format a number as a currency value */
+export function formatCurrency(
+    amount: number,
+    currency: string = 'USD',
+    options: {
+        minimumFractionDigits?: number
+        maximumFractionDigits?: number
+        compact?: boolean
+    } = {}
+): string {
+    const { minimumFractionDigits = 2, maximumFractionDigits = 2, compact = false } = options
+    
+    if (!isFinite(amount)) {
+        return 'N/A'
+    }
+    
+    try {
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency,
+            minimumFractionDigits,
+            maximumFractionDigits,
+            notation: compact ? 'compact' : 'standard',
+        })
+        return formatter.format(amount)
+    } catch (error) {
+        // Fallback for unsupported currencies
+        return `${currency} ${amount.toFixed(maximumFractionDigits)}`
+    }
+}
+
 export const selectStyle: Record<string, (base: Partial<CSSProperties>) => Partial<CSSProperties>> = {
     control: (base) => ({
         ...base,

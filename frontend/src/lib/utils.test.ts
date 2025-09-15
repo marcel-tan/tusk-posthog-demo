@@ -8,10 +8,16 @@ import {
     areObjectValuesEmpty,
     average,
     booleanOperatorMap,
+    calculateAverage,
+    calculateConversionRate,
     calculateDays,
+    calculateGrowthRate,
+    calculateMedian,
+    calculatePercentile,
     capitalizeFirstLetter,
     ceilMsToClosestSecond,
     chooseOperatorMap,
+    clamp,
     colonDelimitedDuration,
     compactNumber,
     dateFilterToText,
@@ -23,6 +29,12 @@ import {
     ensureStringIsNotBlank,
     eventToDescription,
     floorMsToClosestSecond,
+    formatConversionRate,
+    formatCurrency,
+    formatDuration,
+    formatLargeNumber,
+    formatMetricChange,
+    formatMetricRatio,
     genericOperatorMap,
     getDefaultInterval,
     getFormattedLastWeekDate,
@@ -861,5 +873,159 @@ describe('lib/utils', () => {
         expect(shortTimeZone('America/Phoenix')).toEqual('MST')
         expect(shortTimeZone('Europe/Moscow')).toEqual('UTC+3')
         expect(shortTimeZone('Asia/Tokyo')).toEqual('UTC+9')
+    })
+
+    describe('Analytics Utils', () => {
+        describe('formatLargeNumber', () => {
+            it('formats numbers with appropriate suffixes', () => {
+                expect(formatLargeNumber(500)).toBe('500')
+                expect(formatLargeNumber(1500)).toBe('1.5K')
+                expect(formatLargeNumber(1000000)).toBe('1.0M')
+                expect(formatLargeNumber(2500000000)).toBe('2.5B')
+                expect(formatLargeNumber(1500000000000)).toBe('1.5T')
+            })
+
+            it('handles precision settings', () => {
+                expect(formatLargeNumber(1234, 0)).toBe('1K')
+                expect(formatLargeNumber(1234, 2)).toBe('1.23K')
+            })
+
+            it('handles negative numbers', () => {
+                expect(formatLargeNumber(-1500)).toBe('-1.5K')
+                expect(formatLargeNumber(-1000000)).toBe('-1.0M')
+            })
+        })
+
+        describe('calculateGrowthRate', () => {
+            it('calculates growth rate correctly', () => {
+                expect(calculateGrowthRate(120, 100)).toBe(0.2)
+                expect(calculateGrowthRate(80, 100)).toBe(-0.2)
+                expect(calculateGrowthRate(100, 100)).toBe(0)
+            })
+
+            it('handles edge cases', () => {
+                expect(calculateGrowthRate(100, 0)).toBe(Infinity)
+                expect(calculateGrowthRate(0, 0)).toBe(0)
+                expect(calculateGrowthRate(0, 100)).toBe(-1)
+            })
+        })
+
+        describe('formatMetricChange', () => {
+            it('formats positive changes', () => {
+                const result = formatMetricChange(120, 100)
+                expect(result.value).toBe('+20.0%')
+                expect(result.isPositive).toBe(true)
+                expect(result.isNeutral).toBe(false)
+            })
+
+            it('formats negative changes', () => {
+                const result = formatMetricChange(80, 100)
+                expect(result.value).toBe('-20.0%')
+                expect(result.isPositive).toBe(false)
+                expect(result.isNeutral).toBe(false)
+            })
+        })
+
+        describe('calculateConversionRate', () => {
+            it('calculates conversion rates correctly', () => {
+                expect(calculateConversionRate(25, 100)).toBe(0.25)
+                expect(calculateConversionRate(0, 100)).toBe(0)
+                expect(calculateConversionRate(100, 100)).toBe(1)
+            })
+
+            it('handles edge cases', () => {
+                expect(calculateConversionRate(50, 0)).toBe(0)
+                expect(calculateConversionRate(Infinity, 100)).toBe(0)
+                expect(calculateConversionRate(150, 100)).toBe(1) // clamped to max 1
+            })
+        })
+
+        describe('formatConversionRate', () => {
+            it('formats conversion rates as percentages', () => {
+                expect(formatConversionRate(25, 100)).toBe('25.00%')
+                expect(formatConversionRate(1, 3, 1)).toBe('33.3%')
+                expect(formatConversionRate(0, 100)).toBe('0.00%')
+            })
+        })
+
+        describe('calculateAverage', () => {
+            it('calculates averages correctly', () => {
+                expect(calculateAverage([1, 2, 3, 4, 5])).toBe(3)
+                expect(calculateAverage([10, 20, 30])).toBe(20)
+                expect(calculateAverage([0])).toBe(0)
+            })
+
+            it('handles edge cases', () => {
+                expect(calculateAverage([])).toBe(0)
+                expect(calculateAverage([Infinity, 1, 2])).toBe(1.5)
+                expect(calculateAverage([NaN, 1, 2])).toBe(1.5)
+            })
+        })
+
+        describe('calculateMedian', () => {
+            it('calculates median for odd length arrays', () => {
+                expect(calculateMedian([1, 3, 5])).toBe(3)
+                expect(calculateMedian([1, 2, 3, 4, 5])).toBe(3)
+            })
+
+            it('calculates median for even length arrays', () => {
+                expect(calculateMedian([1, 2, 3, 4])).toBe(2.5)
+                expect(calculateMedian([1, 3])).toBe(2)
+            })
+        })
+
+        describe('calculatePercentile', () => {
+            it('calculates percentiles correctly', () => {
+                const data = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+                expect(calculatePercentile(data, 50)).toBe(5.5) // median
+                expect(calculatePercentile(data, 0)).toBe(1)
+                expect(calculatePercentile(data, 100)).toBe(10)
+                expect(calculatePercentile(data, 90)).toBe(9.1)
+            })
+
+            it('handles edge cases', () => {
+                expect(calculatePercentile([], 50)).toBe(0)
+                expect(calculatePercentile([5], 50)).toBe(5)
+                expect(calculatePercentile([1, 2, 3], -10)).toBe(0)
+                expect(calculatePercentile([1, 2, 3], 150)).toBe(0)
+            })
+        })
+
+        describe('formatDuration', () => {
+            it('formats durations correctly', () => {
+                expect(formatDuration(0)).toBe('0 milliseconds')
+                expect(formatDuration(1000)).toBe('1 second')
+                expect(formatDuration(60000)).toBe('1 minute')
+                expect(formatDuration(3661000)).toBe('1 hour, 1 minute')
+                expect(formatDuration(90061000)).toBe('1 day, 1 hour')
+            })
+
+            it('handles invalid input', () => {
+                expect(formatDuration(-1000)).toBe('Invalid duration')
+            })
+        })
+
+        describe('clamp', () => {
+            it('clamps values correctly', () => {
+                expect(clamp(5, 1, 10)).toBe(5)
+                expect(clamp(-5, 1, 10)).toBe(1)
+                expect(clamp(15, 1, 10)).toBe(10)
+                expect(clamp(1, 1, 10)).toBe(1)
+                expect(clamp(10, 1, 10)).toBe(10)
+            })
+        })
+
+        describe('formatCurrency', () => {
+            it('formats currency correctly', () => {
+                expect(formatCurrency(1234.56)).toBe('$1,234.56')
+                expect(formatCurrency(1000, 'EUR')).toBe('€1,000.00')
+                expect(formatCurrency(1500000, 'USD', { compact: true })).toBe('$1.5M')
+            })
+
+            it('handles precision settings', () => {
+                expect(formatCurrency(1234.5678, 'USD', { maximumFractionDigits: 0 })).toBe('$1,235')
+                expect(formatCurrency(1234, 'USD', { minimumFractionDigits: 3 })).toBe('$1,234.000')
+            })
+        })
     })
 })
