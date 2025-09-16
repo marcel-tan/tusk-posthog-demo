@@ -1866,3 +1866,58 @@ export function debounce<F extends (...args: Parameters<F>) => ReturnType<F>>(
         timeout = setTimeout(() => func(...args), waitFor)
     }
 }
+
+/**
+ * Extract common UTM parameters from a URL (or current location by default).
+ * Returns only defined keys.
+ */
+export function getUTMParameters(
+    inputUrl?: string
+): { source?: string; medium?: string; campaign?: string; content?: string; term?: string } {
+    try {
+        let search = ''
+        if (!inputUrl) {
+            search = typeof window !== 'undefined' ? window.location.search : ''
+        } else if (inputUrl.startsWith('?')) {
+            search = inputUrl
+        } else {
+            const url = typeof window !== 'undefined' ? new URL(inputUrl, window.location.origin) : new URL(inputUrl)
+            search = url.search
+        }
+
+        const params = new URLSearchParams(search)
+        const result = {
+            source: ensureStringIsNotBlank(params.get('utm_source') || undefined) || undefined,
+            medium: ensureStringIsNotBlank(params.get('utm_medium') || undefined) || undefined,
+            campaign: ensureStringIsNotBlank(params.get('utm_campaign') || undefined) || undefined,
+            content: ensureStringIsNotBlank(params.get('utm_content') || undefined) || undefined,
+            term: ensureStringIsNotBlank(params.get('utm_term') || undefined) || undefined,
+        }
+        return objectClean(result)
+    } catch {
+        return {}
+    }
+}
+
+/**
+ * Classify and extract the referrer domain.
+ * - Returns 'direct' when no referrer.
+ * - Returns 'internal' when the referrer matches current host.
+ * - Otherwise returns the external referrer hostname (e.g. example.com).
+ */
+export function getReferrerDomain(referrer?: string, currentHost?: string): 'direct' | 'internal' | string {
+    const ref = referrer ?? (typeof document !== 'undefined' ? document.referrer : '')
+    if (!ref) {
+        return 'direct'
+    }
+    try {
+        const refUrl = new URL(ref, typeof window !== 'undefined' ? window.location.origin : undefined)
+        const host = currentHost ?? (typeof window !== 'undefined' ? window.location.host : undefined)
+        if (host && refUrl.host === host) {
+            return 'internal'
+        }
+        return refUrl.hostname
+    } catch {
+        return 'direct'
+    }
+}
