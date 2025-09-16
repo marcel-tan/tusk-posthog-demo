@@ -50,6 +50,8 @@ import {
     toParams,
 } from './utils'
 
+import { getUTMParameters } from './utils'
+
 describe('lib/utils', () => {
     describe('toParams', () => {
         it('handles unusual input', () => {
@@ -862,4 +864,158 @@ describe('lib/utils', () => {
         expect(shortTimeZone('Europe/Moscow')).toEqual('UTC+3')
         expect(shortTimeZone('Asia/Tokyo')).toEqual('UTC+9')
     })
+
+    describe('getUTMParameters', () => {
+        it('should return all UTM parameters when all are present in the URL', () => {
+            const url =
+                'https://example.com?utm_source=google&utm_medium=cpc&utm_campaign=summer_sale&utm_content=banner_ad&utm_term=running_shoes'
+            const expectedParams = {
+                source: 'google',
+                medium: 'cpc',
+                campaign: 'summer_sale',
+                content: 'banner_ad',
+                term: 'running_shoes',
+            }
+            expect(getUTMParameters(url)).toEqual(expectedParams)
+        })
+
+        it('should return an object with only the defined UTM parameters when given a URL containing a subset of the parameters', () => {
+            const url = 'https://example.com?utm_source=google&utm_medium=cpc'
+            const expectedParams = {
+                source: 'google',
+                medium: 'cpc',
+            }
+            expect(getUTMParameters(url)).toEqual(expectedParams)
+        })
+
+        it('should return all UTM parameters when given a query string', () => {
+            const queryString = '?utm_source=google&utm_medium=cpc&utm_campaign=summer_sale';
+            const expectedParams = {
+                source: 'google',
+                medium: 'cpc',
+                campaign: 'summer_sale',
+            };
+            expect(getUTMParameters(queryString)).toEqual(expectedParams);
+        });
+
+        it('should extract UTM parameters from window.location.search when no inputUrl is provided (browser environment)', () => {
+            const mockSearch =
+                '?utm_source=facebook&utm_medium=social&utm_campaign=new_product&utm_content=video_ad&utm_term=tech';
+
+            const locationSpy = jest.spyOn(window, 'location', 'get');
+            locationSpy.mockImplementation(() => ({ search: mockSearch } as any));
+
+            const expectedParams = {
+                source: 'facebook',
+                medium: 'social',
+                campaign: 'new_product',
+                content: 'video_ad',
+                term: 'tech',
+            };
+
+            expect(getUTMParameters()).toEqual(expectedParams);
+
+            locationSpy.mockRestore();
+        });
+
+        it('should correctly decode URL-encoded special characters in UTM parameter values', () => {
+            const url =
+                'https://example.com?utm_source=google%20source&utm_medium=cpc&utm_campaign=summer%26sale&utm_content=banner%2Bad&utm_term=running%25shoes';
+            const expectedParams = {
+                source: 'google source',
+                medium: 'cpc',
+                campaign: 'summer&sale',
+                content: 'banner+ad',
+                term: 'running%shoes',
+            };
+            expect(getUTMParameters(url)).toEqual(expectedParams);
+        });
+
+        it('should treat UTM parameters with only whitespace as undefined and not include them in the returned object', () => {
+            const url =
+                'https://example.com?utm_source=   &utm_medium= cpc &utm_campaign=summer_sale&utm_content=banner_ad&utm_term=running_shoes'
+            const expectedParams = {
+                medium: 'cpc',
+                campaign: 'summer_sale',
+                content: 'banner_ad',
+                term: 'running_shoes',
+            }
+            expect(getUTMParameters(url)).toEqual(expectedParams)
+        })
+    });
+})
+
+import { getReferrerDomain } from './utils'
+
+describe('getReferrerDomain', () => {
+    it('should return the external domain when referrer is from a different host', () => {
+        const currentHost = 'app.posthog.com'
+
+        // Test with a common search engine referrer
+        expect(getReferrerDomain('https://www.google.com/search?q=posthog', currentHost)).toEqual('www.google.com')
+
+        // Test with a social media referrer
+        expect(getReferrerDomain('https://t.co/', currentHost)).toEqual('t.co')
+
+        // Test with another external domain including a path
+        expect(getReferrerDomain('https://github.com/PostHog/posthog', currentHost)).toEqual('github.com')
+
+        // Test with a different protocol and a port number (port should be excluded from hostname)
+        expect(getReferrerDomain('http://anothersite.org:8080/path', currentHost)).toEqual('anothersite.org')
+
+        // Test with a subdomain
+        expect(getReferrerDomain('https://docs.another-company.co.uk', currentHost)).toEqual(
+            'docs.another-company.co.uk'
+        )
+    })
+
+    it('should return "direct" when the referrer is undefined or an empty string', () => {
+        const currentHost = 'app.posthog.com'
+        expect(getReferrerDomain(undefined, currentHost)).toEqual('direct')
+        expect(getReferrerDomain('', currentHost)).toEqual('direct')
+        expect(getReferrerDomain(undefined)).toEqual('direct')
+        expect(getReferrerDomain('')).toEqual('direct')
+    })
+
+    it('should return "internal" when the referrer host matches the current host', () => {
+        const currentHost = 'app.posthog.com'
+        const referrer = 'https://app.posthog.com/some/path'
+        expect(getReferrerDomain(referrer, currentHost)).toEqual('internal')
+    })
+
+    it('should return "direct" when document is undefined and no referrer parameter is provided', () => {
+        const originalDocument = global.document;
+        // Temporarily remove document
+        delete (global as any).document;
+
+        expect(getReferrerDomain()).toEqual('direct');
+
+        // Restore document
+        global.document = originalDocument;
+    });
+
+    it('should return "direct" when window is undefined and no currentHost is provided', () => {
+        const originalWindow = global.window
+        // @ts-expect-error - we are intentionally deleting window
+        delete global.window
+
+        expect(getReferrerDomain()).toEqual('direct')
+
+        global.window = originalWindow
+    })
+
+    // [Tusk] FAILING TEST
+    it('should return "direct" when the referrer is an invalid URL', () => {
+        const currentHost = 'app.posthog.com'
+        expect(getReferrerDomain('this is not a valid URL', currentHost)).toEqual('direct')
+        expect(getReferrerDomain(' ', currentHost)).toEqual('direct')
+        expect(getReferrerDomain('invalid', currentHost)).toEqual('direct')
+    })
+
+    // [Tusk] FAILING TEST
+    it('should handle relative URLs as referrers when window is undefined', () => {
+        const referrer = '/some/relative/path';
+        const currentHost = 'example.com'; // This should not be used since window is undefined
+        expect(getReferrerDomain(referrer, currentHost)).toEqual('direct');
+    });
 })
