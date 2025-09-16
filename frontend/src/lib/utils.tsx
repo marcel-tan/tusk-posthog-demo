@@ -137,6 +137,7 @@ export function percentage(
 
 /** Format large numbers with K, M, B, T suffixes for better readability */
 export function formatLargeNumber(
+    // [UseTusk]
     value: number,
     precision: number = 1,
     threshold: number = 1000
@@ -158,6 +159,7 @@ export function formatLargeNumber(
 
 /** Calculate percentage change between two values */
 export function calculateGrowthRate(current: number, previous: number): number {
+    // [UseTusk]
     if (previous === 0) {
         return current > 0 ? Infinity : 0
     }
@@ -205,6 +207,7 @@ export function formatMetricChange(
 
 /** Calculate conversion rate safely handling edge cases */
 export function calculateConversionRate(numerator: number, denominator: number): number {
+    // [UseTusk]
     if (denominator === 0 || !isFinite(numerator) || !isFinite(denominator)) {
         return 0
     }
@@ -213,6 +216,7 @@ export function calculateConversionRate(numerator: number, denominator: number):
 
 /** Format a conversion rate as a percentage */
 export function formatConversionRate(
+    // [UseTusk]
     numerator: number,
     denominator: number,
     precision: number = 2
