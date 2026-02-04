@@ -6,6 +6,22 @@ import { status } from '../../../utils/status'
 import { castTimestampOrNow } from '../../../utils/utils'
 import { activeMilliseconds } from './snapshot-segmenter'
 
+// Minimum valid timestamp: January 1, 2020 00:00:00 UTC
+// Session recordings couldn't exist before PostHog supported them
+const MIN_VALID_TIMESTAMP_MS = 1577836800000
+
+// Maximum valid timestamp: 24 hours in the future (to allow for clock skew)
+const MAX_FUTURE_TIMESTAMP_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Check if a timestamp is within a valid range for session recordings.
+ * Filters out clearly invalid values like timestamps of 1 (1970) or far-future dates.
+ */
+function isValidTimestamp(timestampMs: number): boolean {
+    const now = Date.now()
+    return timestampMs >= MIN_VALID_TIMESTAMP_MS && timestampMs <= now + MAX_FUTURE_TIMESTAMP_MS
+}
+
 function sanitizeForUTF8(input: string): string {
     // the JS console truncates some logs...
     // when it does that it doesn't check if the output is valid UTF-8
