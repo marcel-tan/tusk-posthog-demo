@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
@@ -51,8 +52,12 @@ func TestPostHogKafkaConsumer_Consume(t *testing.T) {
 	// Mock GeoLocator Lookup
 	mockGeoLocator.On("Lookup", "192.0.2.1").Return(37.7749, -122.4194, nil)
 
+	// Create a context with cancel for graceful shutdown
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
 	// Run Consume in a goroutine
-	go consumer.Consume()
+	go consumer.Consume(ctx)
 
 	// Wait for the message to be processed
 	select {
@@ -78,6 +83,9 @@ func TestPostHogKafkaConsumer_Consume(t *testing.T) {
 	// Test error handling
 	mockConsumer.On("ReadMessage", mock.AnythingOfType("time.Duration")).Return(nil, errors.New("read error")).Maybe()
 	time.Sleep(time.Millisecond * 100) // Give some time for the error to be processed
+
+	// Cancel context to stop the consumer
+	cancel()
 
 	// Assert that all expectations were met
 	mockConsumer.AssertExpectations(t)
