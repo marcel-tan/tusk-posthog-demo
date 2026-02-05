@@ -1,14 +1,19 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	"github.com/getsentry/sentry-go"
@@ -62,6 +67,14 @@ func main() {
 		log.Fatalf("Failed to open MMDB: %v", err)
 	}
 
+	// Create a context that will be cancelled on shutdown signals
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Set up signal handling for graceful shutdown
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
 	stats := newStatsKeeper()
 
 	phEventChan := make(chan PostHogEvent)
@@ -69,7 +82,14 @@ func main() {
 	subChan := make(chan Subscription)
 	unSubChan := make(chan Subscription)
 
-	go stats.keepStats(statsChan)
+	// WaitGroup to track goroutines for graceful shutdown
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		stats.keepStats(ctx, statsChan)
+	}()
 
 	kafkaSecurityProtocol := "SSL"
 	if !isProd {
@@ -81,10 +101,20 @@ func main() {
 		log.Fatalf("Failed to create Kafka consumer: %v", err)
 	}
 	defer consumer.Close()
-	go consumer.Consume()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		consumer.Consume(ctx)
+	}()
 
 	filter := NewFilter(subChan, unSubChan, phEventChan)
-	go filter.Run()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		filter.Run(ctx)
+	}()
 
 	// Echo instance
 	e := echo.New()
@@ -234,5 +264,49 @@ func main() {
 		}
 	})
 
-	e.Logger.Fatal(e.Start(":8080"))
+	// Start server in a goroutine
+	go func() {
+		if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	// Wait for shutdown signal
+	sig := <-sigChan
+	log.Printf("Received signal %v, initiating graceful shutdown...", sig)
+
+	// Create a deadline for graceful shutdown
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+
+	// Shutdown Echo server gracefully
+	if err := e.Shutdown(shutdownCtx); err != nil {
+		e.Logger.Error(err)
+	}
+	log.Println("HTTP server shutdown complete")
+
+	// Cancel the main context to signal all goroutines to stop
+	cancel()
+
+	// Close channels to unblock goroutines
+	close(phEventChan)
+	close(statsChan)
+	close(subChan)
+	close(unSubChan)
+
+	// Wait for all goroutines to finish with a timeout
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		log.Println("All goroutines stopped gracefully")
+	case <-time.After(5 * time.Second):
+		log.Println("Timeout waiting for goroutines to stop")
+	}
+
+	log.Println("Shutdown complete")
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync/atomic"
@@ -97,14 +98,31 @@ func removeSubscription(clientId string, subs []Subscription) []Subscription {
 	return lighterSubs
 }
 
-func (c *Filter) Run() {
+func (c *Filter) Run(ctx context.Context) {
+	log.Println("Filter started")
+
 	for {
 		select {
-		case newSub := <-c.subChan:
+		case <-ctx.Done():
+			log.Println("Filter stopping due to context cancellation")
+			return
+		case newSub, ok := <-c.subChan:
+			if !ok {
+				log.Println("Filter subscription channel closed")
+				return
+			}
 			c.subs = append(c.subs, newSub)
-		case unSub := <-c.unSubChan:
+		case unSub, ok := <-c.unSubChan:
+			if !ok {
+				log.Println("Filter unsubscription channel closed")
+				return
+			}
 			c.subs = removeSubscription(unSub.ClientId, c.subs)
-		case event := <-c.inboundChan:
+		case event, ok := <-c.inboundChan:
+			if !ok {
+				log.Println("Filter inbound channel closed")
+				return
+			}
 			var responseEvent *ResponsePostHogEvent
 			var responseGeoEvent *ResponseGeoEvent
 

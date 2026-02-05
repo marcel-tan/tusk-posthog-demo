@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"time"
@@ -36,7 +37,7 @@ type KafkaConsumerInterface interface {
 }
 
 type KafkaConsumer interface {
-	Consume()
+	Consume(ctx context.Context)
 	Close()
 }
 
@@ -71,77 +72,104 @@ func NewPostHogKafkaConsumer(brokers string, securityProtocol string, groupID st
 	}, nil
 }
 
-func (c *PostHogKafkaConsumer) Consume() {
+func (c *PostHogKafkaConsumer) Consume(ctx context.Context) {
 	err := c.consumer.SubscribeTopics([]string{c.topic}, nil)
 	if err != nil {
 		sentry.CaptureException(err)
 		log.Fatalf("Failed to subscribe to topic: %v", err)
 	}
 
+	log.Println("Kafka consumer started")
+
 	for {
-		msg, err := c.consumer.ReadMessage(-1)
-		if err != nil {
-			log.Printf("Error consuming message: %v", err)
-			sentry.CaptureException(err)
-		}
-
-		var wrapperMessage PostHogEventWrapper
-		err = json.Unmarshal(msg.Value, &wrapperMessage)
-		if err != nil {
-			log.Printf("Error decoding JSON: %v", err)
-			log.Printf("Data: %s", string(msg.Value))
-		}
-
-		phEvent := PostHogEvent{
-			Timestamp:  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
-			Token:      "",
-			Event:      "",
-			Properties: make(map[string]interface{}),
-		}
-
-		data := []byte(wrapperMessage.Data)
-
-		err = json.Unmarshal(data, &phEvent)
-		if err != nil {
-			log.Printf("Error decoding JSON: %v", err)
-			log.Printf("Data: %s", string(data))
-		}
-
-		phEvent.Uuid = wrapperMessage.Uuid
-		phEvent.DistinctId = wrapperMessage.DistinctId
-
-		if wrapperMessage.Token != "" {
-			phEvent.Token = wrapperMessage.Token
-		} else if phEvent.Token == "" {
-			if tokenValue, ok := phEvent.Properties["token"].(string); ok {
-				phEvent.Token = tokenValue
-			} else {
-				log.Printf("No valid token found in event %s", string(msg.Value))
+		select {
+		case <-ctx.Done():
+			log.Println("Kafka consumer stopping due to context cancellation")
+			return
+		default:
+			// Use a timeout so we can check for context cancellation periodically
+			msg, err := c.consumer.ReadMessage(100 * time.Millisecond)
+			if err != nil {
+				// Check if it's a timeout (expected when no messages)
+				if kafkaErr, ok := err.(kafka.Error); ok && kafkaErr.Code() == kafka.ErrTimedOut {
+					continue
+				}
+				log.Printf("Error consuming message: %v", err)
+				sentry.CaptureException(err)
+				continue
 			}
-		}
 
-		var ipStr string = ""
-		if ipValue, ok := phEvent.Properties["$ip"]; ok {
-			if ipProp, ok := ipValue.(string); ok {
-				if ipProp != "" {
-					ipStr = ipProp
+			var wrapperMessage PostHogEventWrapper
+			err = json.Unmarshal(msg.Value, &wrapperMessage)
+			if err != nil {
+				log.Printf("Error decoding JSON: %v", err)
+				log.Printf("Data: %s", string(msg.Value))
+				continue
+			}
+
+			phEvent := PostHogEvent{
+				Timestamp:  time.Now().UTC().Format("2006-01-02T15:04:05.000Z"),
+				Token:      "",
+				Event:      "",
+				Properties: make(map[string]interface{}),
+			}
+
+			data := []byte(wrapperMessage.Data)
+
+			err = json.Unmarshal(data, &phEvent)
+			if err != nil {
+				log.Printf("Error decoding JSON: %v", err)
+				log.Printf("Data: %s", string(data))
+			}
+
+			phEvent.Uuid = wrapperMessage.Uuid
+			phEvent.DistinctId = wrapperMessage.DistinctId
+
+			if wrapperMessage.Token != "" {
+				phEvent.Token = wrapperMessage.Token
+			} else if phEvent.Token == "" {
+				if tokenValue, ok := phEvent.Properties["token"].(string); ok {
+					phEvent.Token = tokenValue
+				} else {
+					log.Printf("No valid token found in event %s", string(msg.Value))
 				}
 			}
-		} else {
-			if wrapperMessage.Ip != "" {
-				ipStr = wrapperMessage.Ip
+
+			var ipStr string = ""
+			if ipValue, ok := phEvent.Properties["$ip"]; ok {
+				if ipProp, ok := ipValue.(string); ok {
+					if ipProp != "" {
+						ipStr = ipProp
+					}
+				}
+			} else {
+				if wrapperMessage.Ip != "" {
+					ipStr = wrapperMessage.Ip
+				}
+			}
+
+			if ipStr != "" {
+				phEvent.Lat, phEvent.Lng, err = c.geolocator.Lookup(ipStr)
+				if err != nil && err.Error() != "invalid IP address" { // An invalid IP address is not an error on our side
+					sentry.CaptureException(err)
+				}
+			}
+
+			// Use select to avoid blocking on closed channels during shutdown
+			select {
+			case <-ctx.Done():
+				log.Println("Kafka consumer stopping due to context cancellation")
+				return
+			case c.outgoingChan <- phEvent:
+			}
+
+			select {
+			case <-ctx.Done():
+				log.Println("Kafka consumer stopping due to context cancellation")
+				return
+			case c.statsChan <- phEvent:
 			}
 		}
-
-		if ipStr != "" {
-			phEvent.Lat, phEvent.Lng, err = c.geolocator.Lookup(ipStr)
-			if err != nil && err.Error() != "invalid IP address" { // An invalid IP address is not an error on our side
-				sentry.CaptureException(err)
-			}
-		}
-
-		c.outgoingChan <- phEvent
-		c.statsChan <- phEvent
 	}
 }
 

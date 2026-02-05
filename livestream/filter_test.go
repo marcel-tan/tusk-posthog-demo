@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -90,7 +91,10 @@ func TestFilterRun(t *testing.T) {
 
 	filter := NewFilter(subChan, unSubChan, inboundChan)
 
-	go filter.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go filter.Run(ctx)
 
 	// Test subscription
 	eventChan := make(chan interface{}, 1)
@@ -148,7 +152,10 @@ func TestFilterRunWithGeoEvent(t *testing.T) {
 
 	filter := NewFilter(subChan, unSubChan, inboundChan)
 
-	go filter.Run()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	go filter.Run(ctx)
 
 	// Test subscription with Geo enabled
 	eventChan := make(chan interface{}, 1)
